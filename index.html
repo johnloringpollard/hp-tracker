@@ -644,14 +644,17 @@
     const weekBody = document.getElementById("weekBody");
     const weekTitle = document.getElementById("weekTitle");
 
-    let view = "daily";
-    let selectedDate = todayKey();
+    const initialUrlState = getUrlState();
+
+    let view = initialUrlState.view;
+    let selectedDate = initialUrlState.date;
     let data = {};
     let editingCheckin = null;
     let timeDraft = "";
     let timeError = "";
 
     datePicker.value = selectedDate;
+    setView(view);
     subscribeToCheckins();
 
     dailyTab.addEventListener("click", () => setView("daily"));
@@ -659,6 +662,7 @@
     datePicker.addEventListener("change", (event) => {
       selectedDate = event.target.value || todayKey();
       clearEditing();
+      updateUrlState();
       render();
     });
 
@@ -666,6 +670,7 @@
       selectedDate = todayKey();
       datePicker.value = selectedDate;
       clearEditing();
+      updateUrlState();
       render();
     });
 
@@ -673,6 +678,7 @@
       selectedDate = addDays(selectedDate, view === "weekly" ? -7 : -1);
       datePicker.value = selectedDate;
       clearEditing();
+      updateUrlState();
       render();
     });
 
@@ -680,6 +686,7 @@
       selectedDate = addDays(selectedDate, view === "weekly" ? 7 : 1);
       datePicker.value = selectedDate;
       clearEditing();
+      updateUrlState();
       render();
     });
 
@@ -700,7 +707,33 @@
       progressWrap.hidden = !isDaily;
       dailyView.hidden = !isDaily;
       weeklyView.hidden = isDaily;
+      updateUrlState();
       render();
+    }
+
+    function isValidDateKey(value) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      return dateKey(parseDate(value)) === value;
+    }
+
+    function getUrlState() {
+      const params = new URLSearchParams(window.location.search);
+      const urlView = params.get("view");
+      const urlDate = params.get("date");
+
+      return {
+        view: urlView === "weekly" ? "weekly" : "daily",
+        date: urlDate && isValidDateKey(urlDate) ? urlDate : todayKey()
+      };
+    }
+
+    function updateUrlState() {
+      const params = new URLSearchParams(window.location.search);
+      params.set("date", selectedDate);
+      params.set("view", view);
+
+      const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+      window.history.replaceState(null, "", nextUrl);
     }
 
     function load() {
