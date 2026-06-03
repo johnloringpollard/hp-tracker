@@ -570,7 +570,7 @@
       </div>
       <div class="stat">
         <div class="stat-label">Done</div>
-        <div class="stat-value" id="doneCount">0 / 7</div>
+        <div class="stat-value" id="doneCount">0 / 8</div>
       </div>
       <div class="stat">
         <div class="stat-label">Completion</div>
@@ -621,7 +621,7 @@
     const db = getFirestore(app);
     const checkinsCollection = collection(db, "checkins");
 
-    const people = ["Pollard", "Harris", "Dan", "Biron", "Koster", "Kelly", "Billy"];
+    const people = ["Pollard", "Harris", "Dan", "Biron", "Koster", "Kelly", "Billy", "Tyler"];
     const storageKey = "daily-check-in-v1";
 
     const dailyGrid = document.getElementById("dailyGrid");
