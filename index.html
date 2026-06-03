@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daily Fit</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #6f7890;
+      --line: #e2e7f0;
+      --done: #1f9d55;
+      --done-soft: #e6f7ee;
+      --not: #d9dee8;
+      --accent: #2f6df6;
+      --shadow: 0 14px 35px rgba(25, 40, 70, 0.10);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(47, 109, 246, 0.12), transparent 34rem),
+        radial-gradient(circle at top right, rgba(31, 157, 85, 0.12), transparent 32rem),
+        var(--bg);
+    }
+
+    .app {
+      width: min(1100px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    header {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: 1fr;
+      margin-bottom: 22px;
+    }
+
+    .hero {
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: var(--shadow);
+      border-radius: 28px;
+      padding: 26px;
+      backdrop-filter: blur(14px);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 5vw, 3.9rem);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+    }
+
+    .subhead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 680px;
+    }
+
+    .controls {
+      margin-top: 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .segmented {
+      display: inline-flex;
+      padding: 5px;
+      background: #edf1f8;
+      border-radius: 999px;
+      gap: 4px;
+    }
+
+    .tab {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 10px 17px;
+      border-radius: 999px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 160ms ease, color 160ms ease, background 160ms ease;
+    }
+
+    .tab[aria-selected="true"] {
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 6px 16px rgba(20, 31, 52, 0.10);
+    }
+
+    .date-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button,
+    input[type="date"] {
+      font: inherit;
+    }
+
+    .icon-btn,
+    .today-btn,
+    .clear-btn {
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 5px 16px rgba(20, 31, 52, 0.06);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .clear-btn {
+      color: #a13f33;
+    }
+
+    .icon-btn:hover,
+    .today-btn:hover,
+    .clear-btn:hover,
+    .tab:hover,
+    .person-card:hover {
+      transform: translateY(-1px);
+    }
+
+    input[type="date"] {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+      padding: 10px 12px;
+      font-weight: 800;
+      color: var(--text);
+      box-shadow: 0 5px 16px rgba(20, 31, 52, 0.06);
+    }
+
+    .summary-row {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 18px 0 18px;
+    }
+
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: 0 10px 25px rgba(20, 31, 52, 0.07);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stat-value {
+      margin-top: 6px;
+      font-size: 2rem;
+      font-weight: 950;
+      letter-spacing: -0.05em;
+    }
+
+    .progress-wrap {
+      margin-top: 18px;
+      height: 14px;
+      width: 100%;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e7ebf4;
+      border: 1px solid var(--line);
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--done));
+      border-radius: 999px;
+      transition: width 450ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 28px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .daily-grid {
+      display: grid;
+      grid-template-columns: repeat( auto-fit, minmax(180px, 1fr) );
+      gap: 14px;
+    }
+
+    .person-card {
+      position: relative;
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 19px;
+      min-height: 145px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+      box-shadow: 0 8px 20px rgba(20, 31, 52, 0.06);
+      text-align: left;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .person-card:focus-visible {
+      outline: 3px solid rgba(47, 109, 246, 0.28);
+      outline-offset: 3px;
+    }
+
+    .person-card.done {
+      background: linear-gradient(145deg, #ffffff, var(--done-soft));
+      border-color: rgba(31, 157, 85, 0.38);
+      box-shadow: 0 16px 36px rgba(31, 157, 85, 0.16);
+    }
+
+    .person-name {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 1.35rem;
+      font-weight: 950;
+      letter-spacing: -0.035em;
+    }
+
+    .badge {
+      display: inline-grid;
+      place-items: center;
+      height: 38px;
+      min-width: 38px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #eef2f8;
+      color: var(--muted);
+      font-weight: 950;
+      transition: background 220ms ease, color 220ms ease, transform 220ms ease;
+    }
+
+    .done .badge {
+      background: var(--done);
+      color: white;
+      transform: rotate(-8deg) scale(1.04);
+    }
+
+    .status {
+      margin-top: 20px;
+      color: var(--muted);
+      font-weight: 850;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 99px;
+      background: #b7bfce;
+      box-shadow: 0 0 0 4px rgba(183, 191, 206, 0.16);
+    }
+
+    .done .status-dot {
+      background: var(--done);
+      box-shadow: 0 0 0 4px rgba(31, 157, 85, 0.15);
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .time-form {
+      margin-top: 16px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .time-input-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .time-input {
+      min-width: 0;
+      grid-column: 1 / -1;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-weight: 800;
+      box-shadow: inset 0 1px 0 rgba(20, 31, 52, 0.03);
+    }
+
+    .time-save,
+    .time-skip {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--text);
+      padding: 10px 12px;
+      font-weight: 900;
+      cursor: pointer;
+      min-width: 68px;
+    }
+
+    .time-save {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .time-error {
+      min-height: 1.2em;
+      color: #a13f33;
+      font-size: 0.86rem;
+      font-weight: 750;
+    }
+
+    .pop {
+      animation: pop 520ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.045) rotate(-0.6deg); }
+      100% { transform: scale(1); }
+    }
+
+    .weekly-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: separate;
+      border-spacing: 0 10px;
+    }
+
+    th {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 6px 8px;
+      white-space: nowrap;
+    }
+
+    th:first-child {
+      text-align: left;
+      padding-left: 14px;
+    }
+
+    td {
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    td:first-child {
+      border-left: 1px solid var(--line);
+      border-radius: 16px 0 0 16px;
+      text-align: left;
+      padding-left: 14px;
+      font-weight: 950;
+      letter-spacing: -0.02em;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      box-shadow: 10px 0 20px rgba(255,255,255,0.86);
+    }
+
+    td:last-child {
+      border-right: 1px solid var(--line);
+      border-radius: 0 16px 16px 0;
+    }
+
+    .day-pill {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      background: #eef2f8;
+      color: #8a93a5;
+      font-weight: 950;
+      border: 1px solid transparent;
+      transition: transform 160ms ease;
+    }
+
+    .day-pill.timed {
+      width: 58px;
+      height: 46px;
+      gap: 1px;
+      line-height: 1;
+    }
+
+    .day-pill-mark {
+      font-size: 1rem;
+    }
+
+    .day-pill-time {
+      font-size: 0.7rem;
+      font-weight: 900;
+    }
+
+    .day-pill.done {
+      background: var(--done);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(31, 157, 85, 0.25);
+    }
+
+    .day-pill.today {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(47, 109, 246, 0.12);
+    }
+
+    .week-title {
+      margin: 0 0 12px;
+      font-size: 1.25rem;
+      font-weight: 950;
+      letter-spacing: -0.03em;
+    }
+
+    .empty-note {
+      color: var(--muted);
+      padding: 8px 2px 0;
+    }
+
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      top: var(--y);
+      left: var(--x);
+      border-radius: 999px;
+      pointer-events: none;
+      z-index: 20;
+      animation: confetti 850ms ease-out forwards;
+      opacity: 0.95;
+    }
+
+    .confetti.mobile-burst {
+      width: 13px;
+      height: 13px;
+      animation-duration: 1050ms;
+    }
+
+    @keyframes confetti {
+      0% {
+        transform: translate(0, 0) scale(0.7);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--dx), var(--dy)) rotate(280deg) scale(0.1);
+        opacity: 0;
+      }
+    }
+
+    .footer-note {
+      margin: 14px 4px 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 720px) {
+      .app { width: min(100% - 18px, 1100px); padding-top: 16px; }
+      .hero { padding: 20px; border-radius: 24px; }
+      .summary-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin: 12px 0;
+      }
+      .summary-row .stat:first-child {
+        display: none;
+      }
+      .summary-row .stat {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border-radius: 16px;
+        padding: 12px;
+      }
+      .summary-row .stat-label {
+        font-size: 0.68rem;
+        letter-spacing: 0.06em;
+      }
+      .summary-row .stat-value {
+        margin-top: 0;
+        font-size: 1.25rem;
+        letter-spacing: -0.03em;
+      }
+      .controls { align-items: stretch; }
+      .segmented, .date-controls { width: 100%; }
+      .tab { flex: 1; }
+      input[type="date"] { flex: 1; min-width: 155px; }
+      .daily-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <section class="hero">
+        <h1>Daily Fit Challenge</h1>
+        <!--<p class="subhead">Pick the day, tap your name, and everyone can quickly see who is done.</p>-->
+
+        <div class="controls">
+          <div class="segmented" role="tablist" aria-label="View">
+            <button class="tab" id="dailyTab" aria-selected="true">Daily</button>
+            <button class="tab" id="weeklyTab" aria-selected="false">Weekly</button>
+          </div>
+
+          <div class="date-controls">
+            <button class="icon-btn" id="prevBtn" aria-label="Previous day or week">←</button>
+            <input type="date" id="datePicker" />
+            <button class="icon-btn" id="nextBtn" aria-label="Next day or week">→</button>
+            <button class="today-btn" id="todayBtn">Today</button>
+            <button style="display:none;" class="clear-btn" id="clearBtn">Clear Day</button>
+          </div>
+        </div>
+
+        <div class="progress-wrap" id="progressWrap" aria-label="Progress">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+      </section>
+    </header>
+
+    <section class="summary-row" id="summaryRow" aria-label="Summary">
+      <div class="stat">
+        <div class="stat-label">Selected Date</div>
+        <div class="stat-value" id="selectedDateLabel">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Done</div>
+        <div class="stat-value" id="doneCount">0 / 7</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Completion</div>
+        <div class="stat-value" id="percentDone">0%</div>
+      </div>
+    </section>
+
+    <section class="panel" id="dailyView" aria-label="Daily check-in">
+      <div class="daily-grid" id="dailyGrid"></div>
+      <!--<div class="empty-note">Tap a name to mark done. Tap again to undo.</div>-->
+    </section>
+
+    <section class="panel" id="weeklyView" aria-label="Weekly check-in" hidden>
+      <h2 class="week-title" id="weekTitle">This Week</h2>
+      <div class="weekly-wrap">
+        <table>
+          <thead>
+            <tr id="weekHeader"></tr>
+          </thead>
+          <tbody id="weekBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      collection,
+      deleteDoc,
+      doc,
+      getFirestore,
+      onSnapshot,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDnHJEMLfU0pyQqZUXS0uw58WegxZDvki0",
+      authDomain: "dailyfit-e47e9.firebaseapp.com",
+      projectId: "dailyfit-e47e9",
+      storageBucket: "dailyfit-e47e9.firebasestorage.app",
+      messagingSenderId: "259021673492",
+      appId: "1:259021673492:web:0f94c49d99d587ca958301",
+      measurementId: "G-89EQCMBTCZ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const checkinsCollection = collection(db, "checkins");
+
+    const people = ["Pollard", "Harris", "Dan", "Biron", "Koster", "Kelly", "Billy"];
+    const storageKey = "daily-check-in-v1";
+
+    const dailyGrid = document.getElementById("dailyGrid");
+    const dailyView = document.getElementById("dailyView");
+    const weeklyView = document.getElementById("weeklyView");
+    const summaryRow = document.getElementById("summaryRow");
+    const dailyTab = document.getElementById("dailyTab");
+    const weeklyTab = document.getElementById("weeklyTab");
+    const datePicker = document.getElementById("datePicker");
+    const todayBtn = document.getElementById("todayBtn");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const selectedDateLabel = document.getElementById("selectedDateLabel");
+    const doneCount = document.getElementById("doneCount");
+    const percentDone = document.getElementById("percentDone");
+    const progressWrap = document.getElementById("progressWrap");
+    const progressBar = document.getElementById("progressBar");
+    const weekHeader = document.getElementById("weekHeader");
+    const weekBody = document.getElementById("weekBody");
+    const weekTitle = document.getElementById("weekTitle");
+
+    let view = "daily";
+    let selectedDate = todayKey();
+    let data = load();
+    let editingCheckin = null;
+    let timeDraft = "";
+    let timeError = "";
+
+    datePicker.value = selectedDate;
+    subscribeToCheckins();
+
+    dailyTab.addEventListener("click", () => setView("daily"));
+    weeklyTab.addEventListener("click", () => setView("weekly"));
+    datePicker.addEventListener("change", (event) => {
+      selectedDate = event.target.value || todayKey();
+      clearEditing();
+      render();
+    });
+
+    todayBtn.addEventListener("click", () => {
+      selectedDate = todayKey();
+      datePicker.value = selectedDate;
+      clearEditing();
+      render();
+    });
+
+    prevBtn.addEventListener("click", () => {
+      selectedDate = addDays(selectedDate, view === "weekly" ? -7 : -1);
+      datePicker.value = selectedDate;
+      clearEditing();
+      render();
+    });
+
+    nextBtn.addEventListener("click", () => {
+      selectedDate = addDays(selectedDate, view === "weekly" ? 7 : 1);
+      datePicker.value = selectedDate;
+      clearEditing();
+      render();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      if (!confirm("Clear all check-ins for this date?")) return;
+      delete data[selectedDate];
+      saveLocal();
+      void deleteDay(selectedDate);
+      render();
+    });
+
+    function setView(nextView) {
+      view = nextView;
+      const isDaily = view === "daily";
+      dailyTab.setAttribute("aria-selected", String(isDaily));
+      weeklyTab.setAttribute("aria-selected", String(!isDaily));
+      summaryRow.hidden = !isDaily;
+      progressWrap.hidden = !isDaily;
+      dailyView.hidden = !isDaily;
+      weeklyView.hidden = isDaily;
+      render();
+    }
+
+    function load() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function save() {
+      saveLocal();
+      void saveDay(selectedDate);
+    }
+
+    function saveLocal() {
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+
+    function cleanDay(day) {
+      const cleaned = {};
+      people.forEach(person => {
+        const entry = day && day[person];
+
+        if (entry === true) {
+          cleaned[person] = true;
+          return;
+        }
+
+        if (entry && entry.done === true) {
+          cleaned[person] = { done: true };
+          const seconds = Number(entry.seconds);
+          const legacyMinutes = Number(entry.minutes);
+
+          if (Number.isFinite(seconds) && seconds > 0) {
+            cleaned[person].seconds = Math.round(seconds);
+          } else if (Number.isFinite(legacyMinutes) && legacyMinutes > 0) {
+            cleaned[person].seconds = Math.round(legacyMinutes * 60);
+          }
+        }
+      });
+      return cleaned;
+    }
+
+    async function saveDay(key) {
+      const day = cleanDay(data[key]);
+
+      try {
+        if (Object.keys(day).length === 0) {
+          await deleteDay(key);
+          return;
+        }
+
+        await setDoc(doc(db, "checkins", key), day);
+      } catch (error) {
+        console.error("Could not save check-ins to Firestore.", error);
+      }
+    }
+
+    async function deleteDay(key) {
+      try {
+        await deleteDoc(doc(db, "checkins", key));
+      } catch (error) {
+        console.error("Could not clear check-ins from Firestore.", error);
+      }
+    }
+
+    function subscribeToCheckins() {
+      onSnapshot(checkinsCollection, snapshot => {
+        const nextData = {};
+
+        snapshot.forEach(dayDoc => {
+          nextData[dayDoc.id] = cleanDay(dayDoc.data());
+        });
+
+        data = nextData;
+        saveLocal();
+        render();
+      }, error => {
+        console.error("Could not load check-ins from Firestore. Using local data.", error);
+      });
+    }
+
+    function todayKey() {
+      const now = new Date();
+      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function parseDate(key) {
+      const [year, month, day] = key.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function dateKey(date) {
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function addDays(key, amount) {
+      const date = parseDate(key);
+      date.setDate(date.getDate() + amount);
+      return dateKey(date);
+    }
+
+    function formatDate(key, options) {
+      return parseDate(key).toLocaleDateString(undefined, options);
+    }
+
+    function getDayData(key) {
+      if (!data[key]) data[key] = {};
+      return data[key];
+    }
+
+    function getEntry(key, person) {
+      return data[key] && data[key][person];
+    }
+
+    function isDone(key, person) {
+      const entry = getEntry(key, person);
+      return entry === true || Boolean(entry && entry.done);
+    }
+
+    function getDurationSeconds(key, person) {
+      const entry = getEntry(key, person);
+      if (!entry || typeof entry !== "object") return null;
+      if (Number.isFinite(Number(entry.seconds))) return Number(entry.seconds);
+      if (Number.isFinite(Number(entry.minutes))) return Number(entry.minutes) * 60;
+      return null;
+    }
+
+    function formatDuration(seconds) {
+      if (!seconds) return "";
+
+      const rounded = Math.round(seconds);
+      const hours = Math.floor(rounded / 3600);
+      const minutes = Math.floor((rounded % 3600) / 60);
+      const remainder = rounded % 60;
+
+      if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+      }
+
+      return `${minutes}:${String(remainder).padStart(2, "0")}`;
+    }
+
+    function parseDuration(value) {
+      const trimmed = value.trim().toLowerCase();
+
+      if (!trimmed) return { seconds: null, error: "" };
+
+      const colonMatch = trimmed.match(/^(\d+)\s*:\s*([0-5]?\d)$/);
+      if (colonMatch) {
+        return {
+          seconds: Number(colonMatch[1]) * 60 + Number(colonMatch[2]),
+          error: ""
+        };
+      }
+
+      let minutes = 0;
+      let seconds = 0;
+      let matched = false;
+      const unitPattern = /(\d+)\s*(minutes?|mins?|m|seconds?|secs?|s)\b/g;
+      let match;
+
+      while ((match = unitPattern.exec(trimmed)) !== null) {
+        matched = true;
+        const amount = Number(match[1]);
+        const unit = match[2];
+
+        if (unit.startsWith("m")) {
+          minutes += amount;
+        } else {
+          seconds += amount;
+        }
+      }
+
+      if (matched) {
+        const total = minutes * 60 + seconds;
+        return total > 0
+          ? { seconds: total, error: "" }
+          : { seconds: null, error: "Enter a time greater than zero." };
+      }
+
+      return { seconds: null, error: "Use a time like 8:30 or 8 minutes 30 seconds." };
+    }
+
+    function clearEditing() {
+      editingCheckin = null;
+      timeDraft = "";
+      timeError = "";
+    }
+
+    function isEditing(person) {
+      return editingCheckin
+        && editingCheckin.key === selectedDate
+        && editingCheckin.person === person;
+    }
+
+    function startDurationEntry(person, prefill = false) {
+      editingCheckin = { key: selectedDate, person };
+      timeDraft = prefill ? formatDuration(getDurationSeconds(selectedDate, person)) : "";
+      timeError = "";
+      render();
+    }
+
+    function completePerson(person, card, seconds = null) {
+      const day = getDayData(selectedDate);
+      day[person] = seconds ? { done: true, seconds } : true;
+      save();
+
+      if (card) {
+        card.classList.add("pop");
+        launchConfetti(card);
+        setTimeout(() => card.classList.remove("pop"), 560);
+      }
+
+      clearEditing();
+      render();
+    }
+
+    function submitDuration(person, card, input) {
+      timeDraft = input.value;
+      const result = parseDuration(timeDraft);
+
+      if (result.error) {
+        timeError = result.error;
+        render();
+        requestAnimationFrame(() => {
+          const nextInput = dailyGrid.querySelector(`[data-person="${CSS.escape(person)}"] .time-input`);
+          nextInput?.focus();
+          nextInput?.setSelectionRange(nextInput.value.length, nextInput.value.length);
+        });
+        return;
+      }
+
+      completePerson(person, card, result.seconds);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[character]));
+    }
+
+    function togglePerson(person) {
+      const day = getDayData(selectedDate);
+      const wasDone = isDone(selectedDate, person);
+
+      if (wasDone) {
+        delete day[person];
+        clearEditing();
+        save();
+        render();
+      } else {
+        completePerson(person, dailyGrid.querySelector(`[data-person="${CSS.escape(person)}"]`));
+      }
+    }
+
+    function render() {
+      renderSummary();
+      renderDaily();
+      renderWeekly();
+    }
+
+    function renderSummary() {
+      const count = people.filter(person => isDone(selectedDate, person)).length;
+      const percent = Math.round((count / people.length) * 100);
+      const isToday = selectedDate === todayKey();
+
+      selectedDateLabel.textContent = isToday
+        ? `Today - ${formatDate(selectedDate, { weekday: "short", month: "long", day: "numeric" })}`
+        : formatDate(selectedDate, { weekday: "long", month: "short", day: "numeric" });
+      doneCount.textContent = `${count} / ${people.length}`;
+      percentDone.textContent = `${percent}%`;
+      progressBar.style.width = `${percent}%`;
+    }
+
+    function renderDaily() {
+      dailyGrid.innerHTML = "";
+
+      people.forEach(person => {
+        const done = isDone(selectedDate, person);
+        const editing = isEditing(person);
+        const duration = formatDuration(getDurationSeconds(selectedDate, person));
+        const statusText = done
+          ? duration ? `Done in ${duration}` : "Done today"
+        : editing ? "Enter your time" : "Not done yet";
+        const hintText = done ? "Tap to undo. Long press to edit time." : "Tap to mark done";
+        const card = document.createElement("div");
+        card.className = `person-card${done ? " done" : ""}`;
+        card.dataset.person = person;
+
+        if (!editing) {
+          card.setAttribute("role", "button");
+          card.tabIndex = 0;
+          card.setAttribute("aria-pressed", String(done));
+        }
+
+        card.innerHTML = `
+          <div class="person-name">
+            <span>${escapeHtml(person)}</span>
+            <span class="badge">${done ? "✓" : "—"}</span>
+          </div>
+          <div class="status">
+            <span class="status-dot"></span>
+            <span>${escapeHtml(statusText)}</span>
+          </div>
+          ${editing ? `
+            <form class="time-form">
+              <div class="time-input-row">
+                <input class="time-input" type="text" inputmode="text" autocomplete="off" placeholder="8:30" value="${escapeHtml(timeDraft)}" aria-label="Completion time for ${escapeHtml(person)}" />
+                <button class="time-save" type="submit">Save</button>
+                <button class="time-skip" type="button">Skip</button>
+              </div>
+              <div class="time-error" aria-live="polite">${escapeHtml(timeError)}</div>
+            </form>
+          ` : `<div class="hint">${escapeHtml(hintText)}</div>`}
+        `;
+
+        if (editing) {
+          const form = card.querySelector(".time-form");
+          const input = card.querySelector(".time-input");
+          const skip = card.querySelector(".time-skip");
+
+          form.addEventListener("submit", event => {
+            event.preventDefault();
+            submitDuration(person, card, input);
+          });
+
+          input.addEventListener("input", event => {
+            timeDraft = event.target.value;
+            timeError = "";
+          });
+
+          skip.addEventListener("click", () => completePerson(person, card));
+
+          requestAnimationFrame(() => input.focus());
+        } else {
+          let longPressTimer = null;
+          let longPressHandled = false;
+
+          const clearLongPress = () => {
+            if (longPressTimer) {
+              clearTimeout(longPressTimer);
+              longPressTimer = null;
+            }
+          };
+
+          if (done) {
+            card.addEventListener("pointerdown", () => {
+              clearLongPress();
+              longPressHandled = false;
+              longPressTimer = setTimeout(() => {
+                longPressHandled = true;
+                startDurationEntry(person, true);
+              }, 550);
+            });
+            card.addEventListener("pointerup", clearLongPress);
+            card.addEventListener("pointercancel", clearLongPress);
+            card.addEventListener("pointerleave", clearLongPress);
+            card.addEventListener("contextmenu", event => event.preventDefault());
+          }
+
+          card.addEventListener("click", event => {
+            if (longPressHandled) {
+              event.preventDefault();
+              longPressHandled = false;
+              return;
+            }
+
+            togglePerson(person);
+          });
+          card.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              togglePerson(person);
+            }
+          });
+        }
+
+        dailyGrid.appendChild(card);
+      });
+    }
+
+    function getWeekDates(key) {
+      const date = parseDate(key);
+      const day = date.getDay();
+      const start = new Date(date);
+      start.setDate(date.getDate() - day);
+
+      return Array.from({ length: 7 }, (_, index) => {
+        const d = new Date(start);
+        d.setDate(start.getDate() + index);
+        return dateKey(d);
+      });
+    }
+
+    function renderWeekly() {
+      const weekDates = getWeekDates(selectedDate);
+      const first = weekDates[0];
+      const last = weekDates[6];
+
+      weekTitle.textContent = `${formatDate(first, { month: "short", day: "numeric" })} – ${formatDate(last, { month: "short", day: "numeric", year: "numeric" })}`;
+
+      weekHeader.innerHTML = "<th>Person</th>" + weekDates.map(key => {
+        const isToday = key === todayKey();
+        return `<th>${formatDate(key, { weekday: "short" })}<br>${formatDate(key, { month: "numeric", day: "numeric" })}${isToday ? "<br>Today" : ""}</th>`;
+      }).join("");
+
+      weekBody.innerHTML = people.map(person => {
+        const cells = weekDates.map(key => {
+          const done = isDone(key, person);
+          const today = key === todayKey();
+          const duration = formatDuration(getDurationSeconds(key, person));
+          const title = `${person} ${done ? duration ? `done in ${duration}` : "done" : "not done"} on ${key}`;
+          const content = done && duration
+            ? `<span class="day-pill-mark">✓</span><span class="day-pill-time">${escapeHtml(duration)}</span>`
+            : done ? "✓" : "—";
+          return `<td><span class="day-pill${done ? " done" : ""}${duration ? " timed" : ""}${today ? " today" : ""}" title="${escapeHtml(title)}">${content}</span></td>`;
+        }).join("");
+
+        return `<tr><td>${escapeHtml(person)}</td>${cells}</tr>`;
+      }).join("");
+    }
+
+    function launchConfetti(element) {
+      const rect = element.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      const colors = ["#2f6df6", "#1f9d55", "#ffb020", "#ef476f", "#7c3aed"];
+      const isSmallScreen = window.matchMedia("(max-width: 720px)").matches;
+      const pieces = isSmallScreen ? 42 : 24;
+      const baseDistance = isSmallScreen ? 95 : 70;
+      const distanceRange = isSmallScreen ? 130 : 95;
+      const duration = isSmallScreen ? 1100 : 900;
+
+      for (let i = 0; i < pieces; i++) {
+        const piece = document.createElement("span");
+        const angle = Math.random() * Math.PI * 2;
+        const distance = baseDistance + Math.random() * distanceRange;
+        piece.className = `confetti${isSmallScreen ? " mobile-burst" : ""}`;
+        piece.style.setProperty("--x", `${x}px`);
+        piece.style.setProperty("--y", `${y}px`);
+        piece.style.setProperty("--dx", `${Math.cos(angle) * distance}px`);
+        piece.style.setProperty("--dy", `${Math.sin(angle) * distance}px`);
+        piece.style.background = colors[i % colors.length];
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), duration);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
