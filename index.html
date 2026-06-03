@@ -1092,7 +1092,7 @@
 
     function getWeekDates(key) {
       const date = parseDate(key);
-      const day = date.getDay();
+      const day = (date.getDay() + 6) % 7;
       const start = new Date(date);
       start.setDate(date.getDate() - day);
 
