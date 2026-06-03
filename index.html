@@ -603,6 +603,7 @@
   </main>
 
   <script type="module">
+    import { WebHaptics } from "https://esm.sh/web-haptics@0.0.6";
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
     import {
       collection,
@@ -626,6 +627,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const checkinsCollection = collection(db, "checkins");
+    const haptics = new WebHaptics();
 
     const people = ["Pollard", "Harris", "Dan", "Biron", "Koster", "Kelly", "Billy", "Tyler"];
     const storageKey = "daily-check-in-v1";
@@ -946,17 +948,15 @@
       render();
     }
 
-    function triggerHaptic(pattern = 18) {
-      if ("vibrate" in navigator) {
-        navigator.vibrate(pattern);
-      }
+    function triggerHaptic(input = "light", options) {
+      void haptics.trigger(input, options);
     }
 
     function completePerson(person, card, seconds = null) {
       const day = getDayData(selectedDate);
       day[person] = seconds ? { done: true, seconds } : true;
       save();
-      triggerHaptic([18, 24, 18]);
+      triggerHaptic("success");
 
       if (card) {
         card.classList.add("pop");
@@ -1004,7 +1004,7 @@
         delete day[person];
         clearEditing();
         save();
-        triggerHaptic(14);
+        triggerHaptic("selection");
         render();
       } else {
         completePerson(person, dailyGrid.querySelector(`[data-person="${CSS.escape(person)}"]`));
