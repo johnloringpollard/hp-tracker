@@ -946,10 +946,17 @@
       render();
     }
 
+    function triggerHaptic(pattern = 18) {
+      if ("vibrate" in navigator) {
+        navigator.vibrate(pattern);
+      }
+    }
+
     function completePerson(person, card, seconds = null) {
       const day = getDayData(selectedDate);
       day[person] = seconds ? { done: true, seconds } : true;
       save();
+      triggerHaptic([18, 24, 18]);
 
       if (card) {
         card.classList.add("pop");
@@ -997,6 +1004,7 @@
         delete day[person];
         clearEditing();
         save();
+        triggerHaptic(14);
         render();
       } else {
         completePerson(person, dailyGrid.querySelector(`[data-person="${CSS.escape(person)}"]`));
