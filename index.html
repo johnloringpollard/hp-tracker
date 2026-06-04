@@ -71,6 +71,13 @@
       letter-spacing: -0.06em;
     }
 
+    .hero-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
     .subhead {
       margin: 0;
       color: var(--muted);
@@ -126,7 +133,6 @@
 
     .icon-btn,
     .today-btn,
-    .notify-btn,
     .clear-btn,
     .date-display {
       border: 1px solid var(--line);
@@ -146,7 +152,6 @@
 
     .icon-btn:hover,
     .today-btn:hover,
-    .notify-btn:hover,
     .clear-btn:hover,
     .date-display:hover,
     .tab:hover,
@@ -166,7 +171,72 @@
     }
 
     .notify-btn {
+      position: relative;
+      flex: 0 0 auto;
+      display: inline-grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--muted);
+      padding: 0;
+      cursor: pointer;
+      box-shadow: 0 5px 16px rgba(20, 31, 52, 0.06);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, color 160ms ease, background 160ms ease;
+    }
+
+    .notify-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .notify-btn:disabled {
+      cursor: default;
+      opacity: 0.68;
+    }
+
+    .notify-btn.is-subscribed {
+      color: var(--done);
+      border-color: rgba(31, 157, 85, 0.28);
+      background: var(--done-soft);
+    }
+
+    .notify-btn.is-blocked {
+      color: #a13f33;
+    }
+
+    .notify-btn.is-working {
+      color: var(--accent);
+    }
+
+    .notify-icon {
+      width: 22px;
+      height: 22px;
+    }
+
+    .notify-btn.is-subscribed::after {
+      content: "";
+      position: absolute;
+      right: 9px;
+      top: 9px;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--done);
+      box-shadow: 0 0 0 3px var(--done-soft);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
       white-space: nowrap;
+      border: 0;
     }
 
     .date-calendar {
@@ -646,6 +716,13 @@
     @media (max-width: 720px) {
       .app { width: min(100% - 18px, 1100px); padding-top: 16px; }
       .hero { padding: 20px; border-radius: 24px; }
+      .hero-title-row {
+        align-items: center;
+      }
+      .notify-btn {
+        width: 42px;
+        height: 42px;
+      }
       .summary-row {
         grid-template-columns: minmax(0, 2fr) minmax(76px, 1fr);
         gap: 8px;
@@ -737,9 +814,6 @@
       .today-btn {
         display: none;
       }
-      .notify-btn {
-        grid-column: 1 / -1;
-      }
       .tab { flex: 1; }
       .daily-grid { grid-template-columns: 1fr; }
     }
@@ -749,7 +823,16 @@
   <main class="app">
     <header>
       <section class="hero">
-        <h1>Daily Fit Challenge</h1>
+        <div class="hero-title-row">
+          <h1>Daily Fit Challenge</h1>
+          <button class="notify-btn" id="notificationBtn" type="button" title="Enable notifications" aria-label="Enable notifications" hidden>
+            <svg class="notify-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.27 21a2 2 0 0 0 3.46 0"></path>
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"></path>
+            </svg>
+            <span class="sr-only" id="notificationLabel">Enable notifications</span>
+          </button>
+        </div>
         <!--<p class="subhead">Pick the day, tap your name, and everyone can quickly see who is done.</p>-->
 
         <div class="controls">
@@ -772,7 +855,6 @@
             <input class="native-date-input" type="date" id="datePicker" aria-label="Selected date" />
             <button class="icon-btn" id="nextBtn" aria-label="Next day or week">→</button>
             <button class="today-btn" id="todayBtn">Today</button>
-            <button class="notify-btn" id="notificationBtn" type="button" hidden>Enable alerts</button>
             <button style="display:none;" class="clear-btn" id="clearBtn">Clear Day</button>
           </div>
         </div>
@@ -876,6 +958,7 @@
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
     const notificationBtn = document.getElementById("notificationBtn");
+    const notificationLabel = document.getElementById("notificationLabel");
     const clearBtn = document.getElementById("clearBtn");
     const selectedDateLabel = document.getElementById("selectedDateLabel");
     const selectedDateText = document.getElementById("selectedDateText");
@@ -1120,9 +1203,17 @@
       return navigator.serviceWorker.ready;
     }
 
-    function setNotificationButton(label, disabled = false) {
-      notificationBtn.textContent = label;
+    function setNotificationButton(label, disabled = false, state = "off") {
+      notificationBtn.setAttribute("aria-label", label);
+      notificationBtn.title = label;
       notificationBtn.disabled = disabled;
+      notificationBtn.classList.toggle("is-subscribed", state === "on");
+      notificationBtn.classList.toggle("is-blocked", state === "blocked");
+      notificationBtn.classList.toggle("is-working", state === "working");
+
+      if (notificationLabel) {
+        notificationLabel.textContent = label;
+      }
     }
 
     async function refreshNotificationButton() {
@@ -1134,19 +1225,23 @@
       notificationBtn.hidden = false;
 
       if (Notification.permission === "denied") {
-        setNotificationButton("Alerts blocked", true);
+        setNotificationButton("Notifications blocked", true, "blocked");
         return;
       }
 
       const registration = await getPushRegistration();
       const subscription = await registration.pushManager.getSubscription();
-      setNotificationButton(subscription ? "Alerts on" : "Enable alerts");
+      setNotificationButton(
+        subscription ? "Notifications on" : "Enable notifications",
+        false,
+        subscription ? "on" : "off"
+      );
     }
 
     async function togglePushNotifications() {
       if (!supportsPushNotifications()) return;
 
-      setNotificationButton("Working...", true);
+      setNotificationButton("Updating notifications", true, "working");
 
       try {
         const registration = await getPushRegistration();
@@ -1155,8 +1250,7 @@
         if (existing) {
           await deletePushSubscription(existing);
           await existing.unsubscribe();
-          setNotificationButton("Enable alerts");
-          notificationBtn.disabled = false;
+          setNotificationButton("Enable notifications");
           return;
         }
 
@@ -1173,12 +1267,10 @@
         });
 
         await savePushSubscription(subscription);
-        setNotificationButton("Alerts on");
-        notificationBtn.disabled = false;
+        setNotificationButton("Notifications on", false, "on");
       } catch (error) {
         console.error("Could not update push notification subscription.", error);
-        setNotificationButton("Enable alerts");
-        notificationBtn.disabled = false;
+        setNotificationButton("Enable notifications");
       }
     }
 
