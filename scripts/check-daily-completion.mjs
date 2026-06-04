@@ -1,5 +1,6 @@
 import admin from "firebase-admin";
 import twilio from "twilio";
+import webpush from "web-push";
 
 const people = ["Pollard", "Harris", "Dan", "Biron", "Koster", "Kelly", "Billy", "Tyler"];
 
@@ -13,7 +14,10 @@ const {
   TWILIO_ACCOUNT_SID,
   TWILIO_AUTH_TOKEN,
   TWILIO_FROM_NUMBER,
-  TWILIO_MESSAGING_SERVICE_SID
+  TWILIO_MESSAGING_SERVICE_SID,
+  VAPID_PRIVATE_KEY,
+  VAPID_PUBLIC_KEY = "BJ7PO8TgpP8R1bL_1ZMzUsWKF677IusRS90F7NjPXWF2FbtXjZxfRr5rir5KFmHLJbylXmH6lMlvKm_zESpX5Tk",
+  VAPID_SUBJECT
 } = process.env;
 
 function requireEnv(name, value) {
@@ -55,6 +59,14 @@ function isDone(entry) {
   return entry === true || Boolean(entry && entry.done === true);
 }
 
+function hasTwilioConfig() {
+  return Boolean(TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && SMS_RECIPIENTS && (TWILIO_MESSAGING_SERVICE_SID || TWILIO_FROM_NUMBER));
+}
+
+function hasPushConfig() {
+  return Boolean(VAPID_PRIVATE_KEY && VAPID_PUBLIC_KEY && VAPID_SUBJECT);
+}
+
 function initFirebase() {
   requireEnv("FIREBASE_SERVICE_ACCOUNT_JSON", FIREBASE_SERVICE_ACCOUNT_JSON);
 
@@ -65,14 +77,6 @@ function initFirebase() {
 }
 
 async function sendTexts(message) {
-  requireEnv("TWILIO_ACCOUNT_SID", TWILIO_ACCOUNT_SID);
-  requireEnv("TWILIO_AUTH_TOKEN", TWILIO_AUTH_TOKEN);
-  requireEnv("SMS_RECIPIENTS", SMS_RECIPIENTS);
-
-  if (!TWILIO_MESSAGING_SERVICE_SID && !TWILIO_FROM_NUMBER) {
-    throw new Error("Set either TWILIO_MESSAGING_SERVICE_SID or TWILIO_FROM_NUMBER.");
-  }
-
   const recipients = parseRecipients(SMS_RECIPIENTS);
   const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
@@ -85,6 +89,41 @@ async function sendTexts(message) {
   })));
 
   console.log(`Sent ${recipients.length} SMS notification${recipients.length === 1 ? "" : "s"}.`);
+}
+
+async function sendPushNotifications(payload) {
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+
+  const snapshot = await admin.firestore().collection("pushSubscriptions").get();
+  const staleSubscriptionIds = [];
+
+  const results = await Promise.allSettled(snapshot.docs.map(async subscriptionDoc => {
+    const subscription = subscriptionDoc.data().subscription;
+
+    if (!subscription) return;
+
+    try {
+      await webpush.sendNotification(subscription, JSON.stringify(payload));
+    } catch (error) {
+      if (error.statusCode === 404 || error.statusCode === 410) {
+        staleSubscriptionIds.push(subscriptionDoc.id);
+        return;
+      }
+
+      throw error;
+    }
+  }));
+
+  await Promise.all(staleSubscriptionIds.map(id => (
+    admin.firestore().doc(`pushSubscriptions/${id}`).delete()
+  )));
+
+  const failed = results.filter(result => result.status === "rejected");
+  if (failed.length > 0) {
+    throw new Error(`Failed to send ${failed.length} push notification${failed.length === 1 ? "" : "s"}.`);
+  }
+
+  console.log(`Sent ${snapshot.size - staleSubscriptionIds.length} push notification${snapshot.size === 1 ? "" : "s"}.`);
 }
 
 async function main() {
@@ -108,9 +147,27 @@ async function main() {
   const message = missing.length === 0
     ? `Daily Fit: Everyone completed today's challenge. ${DAILYFIT_URL}`
     : `Daily Fit: Still missing today: ${missing.join(", ")}. ${DAILYFIT_URL}`;
+  const pushPayload = {
+    title: "Daily Fit",
+    body: missing.length === 0
+      ? "Everyone completed today's challenge."
+      : `Still missing today: ${missing.join(", ")}`,
+    url: DAILYFIT_URL
+  };
 
   console.log(`Checked ${key}. ${missing.length === 0 ? "Everyone is done." : `Missing: ${missing.join(", ")}`}`);
-  await sendTexts(message);
+
+  if (!hasTwilioConfig() && !hasPushConfig()) {
+    throw new Error("Set Twilio SMS secrets, VAPID_PRIVATE_KEY, or both before running notifications.");
+  }
+
+  if (hasPushConfig()) {
+    await sendPushNotifications(pushPayload);
+  }
+
+  if (hasTwilioConfig()) {
+    await sendTexts(message);
+  }
 }
 
 main().catch(error => {

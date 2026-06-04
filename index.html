@@ -126,6 +126,7 @@
 
     .icon-btn,
     .today-btn,
+    .notify-btn,
     .clear-btn,
     .date-display {
       border: 1px solid var(--line);
@@ -145,6 +146,7 @@
 
     .icon-btn:hover,
     .today-btn:hover,
+    .notify-btn:hover,
     .clear-btn:hover,
     .date-display:hover,
     .tab:hover,
@@ -161,6 +163,10 @@
       gap: 12px;
       padding: 10px 16px;
       text-align: left;
+    }
+
+    .notify-btn {
+      white-space: nowrap;
     }
 
     .date-calendar {
@@ -731,6 +737,9 @@
       .today-btn {
         display: none;
       }
+      .notify-btn {
+        grid-column: 1 / -1;
+      }
       .tab { flex: 1; }
       .daily-grid { grid-template-columns: 1fr; }
     }
@@ -763,6 +772,7 @@
             <input class="native-date-input" type="date" id="datePicker" aria-label="Selected date" />
             <button class="icon-btn" id="nextBtn" aria-label="Next day or week">→</button>
             <button class="today-btn" id="todayBtn">Today</button>
+            <button class="notify-btn" id="notificationBtn" type="button" hidden>Enable alerts</button>
             <button style="display:none;" class="clear-btn" id="clearBtn">Clear Day</button>
           </div>
         </div>
@@ -831,6 +841,7 @@
       doc,
       getFirestore,
       onSnapshot,
+      serverTimestamp,
       setDoc
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
@@ -847,10 +858,12 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const checkinsCollection = collection(db, "checkins");
+    const pushSubscriptionsCollection = collection(db, "pushSubscriptions");
     const haptics = new WebHaptics();
 
     const people = ["Pollard", "Harris", "Dan", "Biron", "Koster", "Kelly", "Billy", "Tyler"];
     const storageKey = "daily-check-in-v1";
+    const vapidPublicKey = "BJ7PO8TgpP8R1bL_1ZMzUsWKF677IusRS90F7NjPXWF2FbtXjZxfRr5rir5KFmHLJbylXmH6lMlvKm_zESpX5Tk";
 
     const dailyGrid = document.getElementById("dailyGrid");
     const dailyView = document.getElementById("dailyView");
@@ -862,6 +875,7 @@
     const todayBtn = document.getElementById("todayBtn");
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
+    const notificationBtn = document.getElementById("notificationBtn");
     const clearBtn = document.getElementById("clearBtn");
     const selectedDateLabel = document.getElementById("selectedDateLabel");
     const selectedDateText = document.getElementById("selectedDateText");
@@ -887,6 +901,7 @@
     datePicker.value = selectedDate;
     setView(view);
     subscribeToCheckins();
+    setupPushControls();
 
     dailyTab.addEventListener("click", () => setView("daily"));
     weeklyTab.addEventListener("click", () => setView("weekly"));
@@ -1063,6 +1078,115 @@
       }, error => {
         console.error("Could not load check-ins from Firestore. Using local data.", error);
       });
+    }
+
+    function supportsPushNotifications() {
+      return window.isSecureContext
+        && "Notification" in window
+        && "PushManager" in window
+        && "serviceWorker" in navigator;
+    }
+
+    function urlBase64ToUint8Array(value) {
+      const padding = "=".repeat((4 - value.length % 4) % 4);
+      const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const raw = window.atob(base64);
+      return Uint8Array.from([...raw].map(character => character.charCodeAt(0)));
+    }
+
+    async function subscriptionId(subscription) {
+      const bytes = new TextEncoder().encode(subscription.endpoint);
+      const hash = await crypto.subtle.digest("SHA-256", bytes);
+      return [...new Uint8Array(hash)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function savePushSubscription(subscription) {
+      const id = await subscriptionId(subscription);
+      await setDoc(doc(pushSubscriptionsCollection, id), {
+        endpoint: subscription.endpoint,
+        subscription: subscription.toJSON(),
+        updatedAt: serverTimestamp(),
+        userAgent: navigator.userAgent
+      });
+    }
+
+    async function deletePushSubscription(subscription) {
+      const id = await subscriptionId(subscription);
+      await deleteDoc(doc(pushSubscriptionsCollection, id));
+    }
+
+    async function getPushRegistration() {
+      await navigator.serviceWorker.register("./sw.js");
+      return navigator.serviceWorker.ready;
+    }
+
+    function setNotificationButton(label, disabled = false) {
+      notificationBtn.textContent = label;
+      notificationBtn.disabled = disabled;
+    }
+
+    async function refreshNotificationButton() {
+      if (!supportsPushNotifications()) {
+        notificationBtn.hidden = true;
+        return;
+      }
+
+      notificationBtn.hidden = false;
+
+      if (Notification.permission === "denied") {
+        setNotificationButton("Alerts blocked", true);
+        return;
+      }
+
+      const registration = await getPushRegistration();
+      const subscription = await registration.pushManager.getSubscription();
+      setNotificationButton(subscription ? "Alerts on" : "Enable alerts");
+    }
+
+    async function togglePushNotifications() {
+      if (!supportsPushNotifications()) return;
+
+      setNotificationButton("Working...", true);
+
+      try {
+        const registration = await getPushRegistration();
+        const existing = await registration.pushManager.getSubscription();
+
+        if (existing) {
+          await deletePushSubscription(existing);
+          await existing.unsubscribe();
+          setNotificationButton("Enable alerts");
+          notificationBtn.disabled = false;
+          return;
+        }
+
+        const permission = await Notification.requestPermission();
+
+        if (permission !== "granted") {
+          await refreshNotificationButton();
+          return;
+        }
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        });
+
+        await savePushSubscription(subscription);
+        setNotificationButton("Alerts on");
+        notificationBtn.disabled = false;
+      } catch (error) {
+        console.error("Could not update push notification subscription.", error);
+        setNotificationButton("Enable alerts");
+        notificationBtn.disabled = false;
+      }
+    }
+
+    function setupPushControls() {
+      if (!notificationBtn) return;
+
+      notificationBtn.addEventListener("click", togglePushNotifications);
+      void refreshNotificationButton();
     }
 
     function todayKey() {

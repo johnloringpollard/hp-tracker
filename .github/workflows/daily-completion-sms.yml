@@ -1,4 +1,4 @@
-name: Daily completion SMS
+name: Daily completion notifications
 
 on:
   schedule:
@@ -23,6 +23,9 @@ jobs:
       TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
       TWILIO_MESSAGING_SERVICE_SID: ${{ secrets.TWILIO_MESSAGING_SERVICE_SID }}
       SMS_RECIPIENTS: ${{ secrets.SMS_RECIPIENTS }}
+      VAPID_PUBLIC_KEY: BJ7PO8TgpP8R1bL_1ZMzUsWKF677IusRS90F7NjPXWF2FbtXjZxfRr5rir5KFmHLJbylXmH6lMlvKm_zESpX5Tk
+      VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+      VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
       SEND_COMPLETE_TEXT: "true"
     steps:
       - uses: actions/checkout@v4
