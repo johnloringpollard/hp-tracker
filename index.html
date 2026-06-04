@@ -208,6 +208,10 @@
       letter-spacing: -0.05em;
     }
 
+    .streak-label-mobile {
+      display: none;
+    }
+
     .streak-card {
       position: relative;
       min-height: 0;
@@ -215,7 +219,7 @@
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
       align-items: center;
-      gap: 14px;
+      gap: 20px;
       padding: 18px;
       background:
         radial-gradient(circle at 15% 28%, rgba(121, 87, 255, 0.14), transparent 8rem),
@@ -678,6 +682,12 @@
         display: grid;
         justify-items: center;
       }
+      .streak-label-full {
+        display: none;
+      }
+      .streak-label-mobile {
+        display: inline;
+      }
       .streak-number {
         margin-top: 0;
         font-size: 1.9rem;
@@ -769,7 +779,10 @@
           </svg>
         </div>
         <div class="streak-copy">
-          <div class="stat-label">Streak</div>
+          <div class="stat-label">
+            <span class="streak-label-full">Streak</span>
+            <span class="streak-label-mobile">Day Streak</span>
+          </div>
           <div class="streak-number" id="streakCount">0</div>
           <div class="streak-caption" id="streakCaption">Days in a row</div>
         </div>
