@@ -1,0 +1,33 @@
+name: Daily completion SMS
+
+on:
+  schedule:
+    # 8pm America/New_York is 00:00 UTC during daylight saving time
+    # and 01:00 UTC during standard time. The script exits unless it is
+    # actually 8pm in America/New_York.
+    - cron: "0 0 * * *"
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TIME_ZONE: America/New_York
+      DAILYFIT_URL: https://johnloringpollard.github.io/dailyfit/
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+      TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+      TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
+      TWILIO_MESSAGING_SERVICE_SID: ${{ secrets.TWILIO_MESSAGING_SERVICE_SID }}
+      SMS_RECIPIENTS: ${{ secrets.SMS_RECIPIENTS }}
+      SEND_COMPLETE_TEXT: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm run check:daily

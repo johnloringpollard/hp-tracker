@@ -1,0 +1,12 @@
+{
+  "name": "dailyfit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:daily": "node scripts/check-daily-completion.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.4.0",
+    "twilio": "^5.8.0"
+  }
+}
