@@ -162,7 +162,7 @@
     .summary-row {
       display: grid;
       gap: 14px;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       margin: 18px 0 18px;
     }
 
@@ -509,7 +509,7 @@
       .app { width: min(100% - 18px, 1100px); padding-top: 16px; }
       .hero { padding: 20px; border-radius: 24px; }
       .summary-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 8px;
         margin: 12px 0;
       }
@@ -582,6 +582,10 @@
         <div class="stat-label">Completion</div>
         <div class="stat-value" id="percentDone">0%</div>
       </div>
+      <div class="stat">
+        <div class="stat-label">Streak</div>
+        <div class="stat-value" id="streakCount">0 days</div>
+      </div>
     </section>
 
     <section class="panel" id="dailyView" aria-label="Daily check-in">
@@ -646,6 +650,7 @@
     const selectedDateLabel = document.getElementById("selectedDateLabel");
     const doneCount = document.getElementById("doneCount");
     const percentDone = document.getElementById("percentDone");
+    const streakCount = document.getElementById("streakCount");
     const progressWrap = document.getElementById("progressWrap");
     const progressBar = document.getElementById("progressBar");
     const weekHeader = document.getElementById("weekHeader");
@@ -865,6 +870,22 @@
       return entry === true || Boolean(entry && entry.done);
     }
 
+    function isDayComplete(key) {
+      return people.every(person => isDone(key, person));
+    }
+
+    function getStreakEndingAt(key) {
+      let streak = 0;
+      let cursor = key;
+
+      while (isDayComplete(cursor)) {
+        streak += 1;
+        cursor = addDays(cursor, -1);
+      }
+
+      return streak;
+    }
+
     function getDurationSeconds(key, person) {
       const entry = getEntry(key, person);
       if (!entry || typeof entry !== "object") return null;
@@ -1020,6 +1041,7 @@
     function renderSummary() {
       const count = people.filter(person => isDone(selectedDate, person)).length;
       const percent = Math.round((count / people.length) * 100);
+      const streak = getStreakEndingAt(selectedDate);
       const isToday = selectedDate === todayKey();
 
       selectedDateLabel.textContent = isToday
@@ -1027,6 +1049,7 @@
         : formatDate(selectedDate, { weekday: "long", month: "short", day: "numeric" });
       doneCount.textContent = `${count} / ${people.length}`;
       percentDone.textContent = `${percent}%`;
+      streakCount.textContent = `${streak} ${streak === 1 ? "day" : "days"}`;
       progressBar.style.width = `${percent}%`;
     }
 
