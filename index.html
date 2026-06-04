@@ -154,7 +154,7 @@
 
     .date-display {
       flex: 0 0 auto;
-      min-width: 190px;
+      min-width: 270px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -926,11 +926,26 @@
       return parseDate(key).toLocaleDateString(undefined, options);
     }
 
-    function formatDateControl(key) {
+    function ordinalDay(day) {
+      if (day > 3 && day < 21) return `${day}th`;
+
+      switch (day % 10) {
+        case 1:
+          return `${day}st`;
+        case 2:
+          return `${day}nd`;
+        case 3:
+          return `${day}rd`;
+        default:
+          return `${day}th`;
+      }
+    }
+
+    function formatReadableDate(key) {
       const date = parseDate(key);
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${month}/${day}/${date.getFullYear()}`;
+      const weekday = date.toLocaleDateString(undefined, { weekday: "short" });
+      const month = date.toLocaleDateString(undefined, { month: "long" });
+      return `${weekday}, ${month} ${ordinalDay(date.getDate())}`;
     }
 
     function getDayData(key) {
@@ -1122,9 +1137,9 @@
       const isToday = selectedDate === todayKey();
 
       const readableDate = isToday
-        ? `Today - ${formatDate(selectedDate, { weekday: "short", month: "long", day: "numeric" })}`
-        : formatDate(selectedDate, { weekday: "long", month: "short", day: "numeric" });
-      selectedDateText.textContent = formatDateControl(selectedDate);
+        ? `Today - ${formatReadableDate(selectedDate)}`
+        : formatReadableDate(selectedDate);
+      selectedDateText.textContent = readableDate;
       selectedDateLabel.setAttribute("aria-label", `Selected date ${readableDate}. Open date picker.`);
       doneCount.textContent = `${count} / ${people.length} complete`;
       percentDone.textContent = `${percent}%`;
