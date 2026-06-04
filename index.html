@@ -210,12 +210,12 @@
 
     .streak-card {
       position: relative;
-      min-height: 148px;
+      min-height: 130px;
       overflow: hidden;
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) minmax(118px, 0.9fr);
+      grid-template-columns: auto minmax(0, 1fr);
       align-items: center;
-      gap: 16px;
+      gap: 18px;
       padding: 22px;
       background:
         radial-gradient(circle at 15% 28%, rgba(121, 87, 255, 0.14), transparent 8rem),
@@ -289,44 +289,6 @@
       font-weight: 750;
       white-space: nowrap;
     }
-
-    .streak-art {
-      position: relative;
-      align-self: stretch;
-      min-height: 104px;
-      opacity: 0.95;
-      overflow: hidden;
-    }
-
-    .streak-curve {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      overflow: visible;
-    }
-
-    .streak-bars {
-      position: absolute;
-      right: 12px;
-      bottom: 2px;
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-    }
-
-    .streak-bar {
-      width: 18px;
-      height: var(--bar-height);
-      border-radius: 999px 999px 4px 4px;
-      background: linear-gradient(180deg, rgba(31, 157, 85, 0.32), rgba(47, 109, 246, 0.08));
-    }
-
-    .streak-bar:nth-child(1) { opacity: 0.34; }
-    .streak-bar:nth-child(2) { opacity: 0.46; }
-    .streak-bar:nth-child(3) { opacity: 0.58; }
-    .streak-bar:nth-child(4) { opacity: 0.76; }
-    .streak-bar:nth-child(5) { opacity: 0.9; }
 
     .progress-stat-line {
       margin-top: 8px;
@@ -685,8 +647,8 @@
         letter-spacing: -0.03em;
       }
       .summary-row .streak-card {
-        min-height: 118px;
-        grid-template-columns: auto minmax(0, 1fr) 92px;
+        min-height: 104px;
+        grid-template-columns: auto minmax(0, 1fr);
         gap: 12px;
         padding: 16px;
       }
@@ -705,16 +667,6 @@
         margin-top: 5px;
         font-size: 0.9rem;
         white-space: normal;
-      }
-      .streak-art {
-        min-height: 82px;
-      }
-      .streak-bars {
-        right: 4px;
-        gap: 6px;
-      }
-      .streak-bar {
-        width: 12px;
       }
       .progress-stat-line {
         margin-top: 6px;
@@ -803,26 +755,6 @@
           <div class="stat-label">Streak</div>
           <div class="streak-number" id="streakCount">0</div>
           <div class="streak-caption" id="streakCaption">Days in a row</div>
-        </div>
-        <div class="streak-art" aria-hidden="true">
-          <svg class="streak-curve" viewBox="0 0 160 112" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="streakCurveGradient" x1="16" y1="88" x2="146" y2="12" gradientUnits="userSpaceOnUse">
-                <stop offset="0" stop-color="#dfe8ff" stop-opacity="0"></stop>
-                <stop offset="0.48" stop-color="#4f9af8"></stop>
-                <stop offset="1" stop-color="#34b875"></stop>
-              </linearGradient>
-            </defs>
-            <path d="M18 86 C 62 78, 107 58, 144 12" fill="none" stroke="url(#streakCurveGradient)" stroke-width="5" stroke-linecap="round"></path>
-            <path d="M144 2 L148 11 L158 15 L148 19 L144 29 L140 19 L130 15 L140 11 Z" fill="#34b875"></path>
-          </svg>
-          <div class="streak-bars">
-            <span class="streak-bar" style="--bar-height: 28px"></span>
-            <span class="streak-bar" style="--bar-height: 40px"></span>
-            <span class="streak-bar" style="--bar-height: 54px"></span>
-            <span class="streak-bar" style="--bar-height: 72px"></span>
-            <span class="streak-bar" style="--bar-height: 92px"></span>
-          </div>
         </div>
       </div>
     </section>
