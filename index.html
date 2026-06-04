@@ -407,6 +407,97 @@
       transition: width 450ms cubic-bezier(.2,.9,.2,1);
     }
 
+    .leaderboard {
+      margin: 0 0 18px;
+      padding: 16px 18px;
+    }
+
+    .leaderboard-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .leaderboard-icon {
+      width: 22px;
+      height: 22px;
+      color: #4f63f6;
+    }
+
+    .leaderboard-list {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+    }
+
+    .leaderboard-item {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+      padding: 0 22px;
+    }
+
+    .leaderboard-item:first-child {
+      padding-left: 0;
+    }
+
+    .leaderboard-item + .leaderboard-item {
+      border-left: 1px solid var(--line);
+    }
+
+    .rank-badge {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      color: white;
+      font-size: 1.05rem;
+      font-weight: 950;
+      box-shadow: 0 8px 16px rgba(20, 31, 52, 0.10);
+    }
+
+    .leaderboard-item:nth-child(1) .rank-badge {
+      background: linear-gradient(145deg, #f5cc49, #d99c17);
+    }
+
+    .leaderboard-item:nth-child(2) .rank-badge {
+      background: linear-gradient(145deg, #b7c0d1, #7d8798);
+    }
+
+    .leaderboard-item:nth-child(3) .rank-badge {
+      background: linear-gradient(145deg, #d48135, #b3551f);
+    }
+
+    .leaderboard-name {
+      min-width: 0;
+      font-size: 1.05rem;
+      font-weight: 950;
+      letter-spacing: -0.03em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .leaderboard-copy {
+      min-width: 0;
+    }
+
+    .leaderboard-time {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 750;
+    }
+
     .panel {
       background: rgba(255, 255, 255, 0.82);
       border: 1px solid rgba(255, 255, 255, 0.9);
@@ -799,6 +890,41 @@
       .progress-percent {
         font-size: 1.25rem;
       }
+      .leaderboard {
+        margin-bottom: 12px;
+        padding: 14px;
+        border-radius: 20px;
+      }
+      .leaderboard-heading {
+        font-size: 0.72rem;
+        gap: 9px;
+      }
+      .leaderboard-icon {
+        width: 19px;
+        height: 19px;
+      }
+      .leaderboard-list {
+        margin-top: 12px;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .leaderboard-item {
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 12px;
+        padding: 0;
+      }
+      .leaderboard-item + .leaderboard-item {
+        border-left: 0;
+      }
+      .leaderboard-copy {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .leaderboard-time {
+        margin-top: 0;
+      }
       .controls {
         align-items: stretch;
         flex-wrap: wrap;
@@ -900,6 +1026,20 @@
       </div>
     </section>
 
+    <section class="panel leaderboard" id="leaderboardPanel" aria-label="Leaderboard" hidden>
+      <div class="leaderboard-heading">
+        <svg class="leaderboard-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 21h8"></path>
+          <path d="M12 17v4"></path>
+          <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"></path>
+          <path d="M17 5h3a3 3 0 0 1-3 3"></path>
+          <path d="M7 5H4a3 3 0 0 0 3 3"></path>
+        </svg>
+        <span>Fastest all time (up to today)</span>
+      </div>
+      <div class="leaderboard-list" id="leaderboardList"></div>
+    </section>
+
     <section class="panel" id="dailyView" aria-label="Daily check-in">
       <div class="daily-grid" id="dailyGrid"></div>
       <!--<div class="empty-note">Tap a name to mark done. Tap again to undo.</div>-->
@@ -955,6 +1095,8 @@
     const dailyView = document.getElementById("dailyView");
     const weeklyView = document.getElementById("weeklyView");
     const summaryRow = document.getElementById("summaryRow");
+    const leaderboardPanel = document.getElementById("leaderboardPanel");
+    const leaderboardList = document.getElementById("leaderboardList");
     const dailyTab = document.getElementById("dailyTab");
     const weeklyTab = document.getElementById("weeklyTab");
     const datePicker = document.getElementById("datePicker");
@@ -1527,6 +1669,7 @@
 
     function render() {
       renderSummary();
+      renderLeaderboard();
       renderDaily();
       renderWeekly();
     }
@@ -1547,6 +1690,52 @@
       streakCount.textContent = String(streak);
       streakCaption.textContent = streak === 1 ? "Day in a row" : "Days in a row";
       progressBar.style.width = `${percent}%`;
+    }
+
+    function getFastestLeaderboard() {
+      const today = todayKey();
+      const bestByPerson = new Map();
+
+      Object.entries(data).forEach(([key, day]) => {
+        if (key > today || !day) return;
+
+        people.forEach(person => {
+          if (!isDone(key, person)) return;
+
+          const seconds = getDurationSeconds(key, person);
+          if (!Number.isFinite(seconds) || seconds <= 0) return;
+
+          const current = bestByPerson.get(person);
+          if (!current || seconds < current.seconds) {
+            bestByPerson.set(person, { person, seconds, date: key });
+          }
+        });
+      });
+
+      return [...bestByPerson.values()]
+        .sort((a, b) => a.seconds - b.seconds || a.person.localeCompare(b.person))
+        .slice(0, 3);
+    }
+
+    function renderLeaderboard() {
+      const entries = getFastestLeaderboard();
+
+      if (view !== "daily" || entries.length === 0) {
+        leaderboardPanel.hidden = true;
+        leaderboardList.innerHTML = "";
+        return;
+      }
+
+      leaderboardPanel.hidden = false;
+      leaderboardList.innerHTML = entries.map((entry, index) => `
+        <div class="leaderboard-item" title="${escapeHtml(`${entry.person} finished in ${formatDuration(entry.seconds)} on ${formatReadableDate(entry.date)}`)}">
+          <span class="rank-badge">${index + 1}</span>
+          <div class="leaderboard-copy">
+            <div class="leaderboard-name">${escapeHtml(entry.person)}</div>
+            <div class="leaderboard-time">${escapeHtml(formatDuration(entry.seconds))}</div>
+          </div>
+        </div>
+      `).join("");
     }
 
     function renderDaily() {
