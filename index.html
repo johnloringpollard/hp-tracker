@@ -125,7 +125,8 @@
 
     .icon-btn,
     .today-btn,
-    .clear-btn {
+    .clear-btn,
+    .date-display {
       border: 1px solid var(--line);
       background: var(--card);
       color: var(--text);
@@ -144,19 +145,35 @@
     .icon-btn:hover,
     .today-btn:hover,
     .clear-btn:hover,
+    .date-display:hover,
     .tab:hover,
     .person-card:hover {
       transform: translateY(-1px);
     }
 
-    input[type="date"] {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: var(--card);
-      padding: 10px 12px;
-      font-weight: 800;
-      color: var(--text);
-      box-shadow: 0 5px 16px rgba(20, 31, 52, 0.06);
+    .date-display {
+      flex: 1 1 280px;
+      min-width: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      text-align: left;
+    }
+
+    .date-display::after {
+      content: "▾";
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .native-date-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
     }
 
     .summary-row {
@@ -187,13 +204,6 @@
       font-size: 2rem;
       font-weight: 950;
       letter-spacing: -0.05em;
-    }
-
-    .selected-date-readout {
-      margin-top: 16px;
-      color: var(--muted);
-      font-size: 1.05rem;
-      font-weight: 900;
     }
 
     .progress-stat-line {
@@ -552,8 +562,9 @@
         font-size: 1.25rem;
         letter-spacing: -0.03em;
       }
-      .selected-date-readout {
-        font-size: 0.98rem;
+      .date-display {
+        flex-basis: 100%;
+        min-width: 0;
       }
       .progress-stat-line {
         margin-top: 6px;
@@ -567,7 +578,6 @@
       .controls { align-items: stretch; }
       .segmented, .date-controls { width: 100%; }
       .tab { flex: 1; }
-      input[type="date"] { flex: 1; min-width: 155px; }
       .daily-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -587,14 +597,13 @@
 
           <div class="date-controls">
             <button class="icon-btn" id="prevBtn" aria-label="Previous day or week">←</button>
-            <input type="date" id="datePicker" />
+            <button class="date-display" id="selectedDateLabel" type="button">—</button>
+            <input class="native-date-input" type="date" id="datePicker" aria-label="Selected date" />
             <button class="icon-btn" id="nextBtn" aria-label="Next day or week">→</button>
             <button class="today-btn" id="todayBtn">Today</button>
             <button style="display:none;" class="clear-btn" id="clearBtn">Clear Day</button>
           </div>
         </div>
-
-        <div class="selected-date-readout" id="selectedDateLabel">—</div>
       </section>
     </header>
 
@@ -699,6 +708,7 @@
 
     dailyTab.addEventListener("click", () => setView("daily"));
     weeklyTab.addEventListener("click", () => setView("weekly"));
+    selectedDateLabel.addEventListener("click", openDatePicker);
     datePicker.addEventListener("change", (event) => {
       selectedDate = event.target.value || todayKey();
       clearEditing();
@@ -737,6 +747,22 @@
       void deleteDay(selectedDate);
       render();
     });
+
+    function openDatePicker() {
+      datePicker.focus({ preventScroll: true });
+
+      if (typeof datePicker.showPicker === "function") {
+        try {
+          datePicker.showPicker();
+          return;
+        } catch {
+          datePicker.click();
+          return;
+        }
+      }
+
+      datePicker.click();
+    }
 
     function setView(nextView) {
       view = nextView;
@@ -1074,6 +1100,7 @@
       selectedDateLabel.textContent = isToday
         ? `Today - ${formatDate(selectedDate, { weekday: "short", month: "long", day: "numeric" })}`
         : formatDate(selectedDate, { weekday: "long", month: "short", day: "numeric" });
+      selectedDateLabel.setAttribute("aria-label", `Selected date ${selectedDateLabel.textContent}. Open date picker.`);
       doneCount.textContent = `${count} / ${people.length} complete`;
       percentDone.textContent = `${percent}%`;
       streakCount.textContent = `${streak} ${streak === 1 ? "day" : "days"}`;
