@@ -162,7 +162,7 @@
     .summary-row {
       display: grid;
       gap: 14px;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: 2fr 1fr;
       margin: 18px 0 18px;
     }
 
@@ -189,8 +189,34 @@
       letter-spacing: -0.05em;
     }
 
+    .selected-date-readout {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 1.05rem;
+      font-weight: 900;
+    }
+
+    .progress-stat-line {
+      margin-top: 8px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 950;
+      letter-spacing: -0.04em;
+    }
+
+    .progress-count {
+      font-size: 1.75rem;
+    }
+
+    .progress-percent {
+      color: var(--done);
+      font-size: 2rem;
+    }
+
     .progress-wrap {
-      margin-top: 18px;
+      margin-top: 14px;
       height: 14px;
       width: 100%;
       border-radius: 999px;
@@ -509,18 +535,11 @@
       .app { width: min(100% - 18px, 1100px); padding-top: 16px; }
       .hero { padding: 20px; border-radius: 24px; }
       .summary-row {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: 1fr;
         gap: 8px;
         margin: 12px 0;
       }
-      .summary-row .stat:first-child {
-        display: none;
-      }
       .summary-row .stat {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
         border-radius: 16px;
         padding: 12px;
       }
@@ -532,6 +551,18 @@
         margin-top: 0;
         font-size: 1.25rem;
         letter-spacing: -0.03em;
+      }
+      .selected-date-readout {
+        font-size: 0.98rem;
+      }
+      .progress-stat-line {
+        margin-top: 6px;
+      }
+      .progress-count {
+        font-size: 1.15rem;
+      }
+      .progress-percent {
+        font-size: 1.25rem;
       }
       .controls { align-items: stretch; }
       .segmented, .date-controls { width: 100%; }
@@ -563,24 +594,20 @@
           </div>
         </div>
 
-        <div class="progress-wrap" id="progressWrap" aria-label="Progress">
-          <div class="progress-bar" id="progressBar"></div>
-        </div>
+        <div class="selected-date-readout" id="selectedDateLabel">—</div>
       </section>
     </header>
 
     <section class="summary-row" id="summaryRow" aria-label="Summary">
       <div class="stat">
-        <div class="stat-label">Selected Date</div>
-        <div class="stat-value" id="selectedDateLabel">—</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Done</div>
-        <div class="stat-value" id="doneCount">0 / 8</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Completion</div>
-        <div class="stat-value" id="percentDone">0%</div>
+        <div class="stat-label">Progress</div>
+        <div class="progress-stat-line">
+          <span class="progress-count" id="doneCount">0 / 8 complete</span>
+          <span class="progress-percent" id="percentDone">0%</span>
+        </div>
+        <div class="progress-wrap" id="progressWrap" aria-label="Progress">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
       </div>
       <div class="stat">
         <div class="stat-label">Streak</div>
@@ -1047,7 +1074,7 @@
       selectedDateLabel.textContent = isToday
         ? `Today - ${formatDate(selectedDate, { weekday: "short", month: "long", day: "numeric" })}`
         : formatDate(selectedDate, { weekday: "long", month: "short", day: "numeric" });
-      doneCount.textContent = `${count} / ${people.length}`;
+      doneCount.textContent = `${count} / ${people.length} complete`;
       percentDone.textContent = `${percent}%`;
       streakCount.textContent = `${streak} ${streak === 1 ? "day" : "days"}`;
       progressBar.style.width = `${percent}%`;
