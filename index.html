@@ -362,6 +362,14 @@
       user-select: none;
     }
 
+    .person-card.readonly {
+      cursor: default;
+    }
+
+    .person-card.readonly:hover {
+      transform: none;
+    }
+
     .person-card:focus-visible {
       outline: 3px solid rgba(47, 109, 246, 0.28);
       outline-offset: 3px;
@@ -1119,6 +1127,10 @@
       return entry === true || Boolean(entry && entry.done);
     }
 
+    function canChangeDoneState() {
+      return selectedDate === todayKey();
+    }
+
     function isDayComplete(key) {
       return people.every(person => isDone(key, person));
     }
@@ -1212,6 +1224,8 @@
     }
 
     function startDurationEntry(person, prefill = false) {
+      if (!canChangeDoneState() && !isDone(selectedDate, person)) return;
+
       editingCheckin = { key: selectedDate, person };
       timeDraft = prefill ? formatDuration(getDurationSeconds(selectedDate, person)) : "";
       timeError = "";
@@ -1223,6 +1237,14 @@
     }
 
     function completePerson(person, card, seconds = null) {
+      const alreadyDone = isDone(selectedDate, person);
+
+      if (!canChangeDoneState() && !alreadyDone) {
+        clearEditing();
+        render();
+        return;
+      }
+
       const day = getDayData(selectedDate);
       day[person] = seconds ? { done: true, seconds } : true;
       save();
@@ -1267,6 +1289,8 @@
     }
 
     function togglePerson(person) {
+      if (!canChangeDoneState()) return;
+
       const day = getDayData(selectedDate);
       const wasDone = isDone(selectedDate, person);
 
@@ -1311,16 +1335,19 @@
       people.forEach(person => {
         const done = isDone(selectedDate, person);
         const editing = isEditing(person);
+        const canChangeDone = canChangeDoneState();
         const duration = formatDuration(getDurationSeconds(selectedDate, person));
         const statusText = done
-          ? duration ? `Done in ${duration}` : "Done today"
+          ? duration ? `Done in ${duration}` : canChangeDone ? "Done today" : "Done"
         : editing ? "Enter your time" : "Not done yet";
-        const hintText = done ? "Tap to undo. Long press to edit time." : "Tap to mark done";
+        const hintText = done
+          ? canChangeDone ? "Tap to undo. Long press to edit time." : "Tap to edit time."
+          : canChangeDone ? "Tap to mark done" : "Only today can be marked done";
         const card = document.createElement("div");
-        card.className = `person-card${done ? " done" : ""}`;
+        card.className = `person-card${done ? " done" : ""}${!canChangeDone && !done ? " readonly" : ""}`;
         card.dataset.person = person;
 
-        if (!editing) {
+        if (!editing && (canChangeDone || done)) {
           card.setAttribute("role", "button");
           card.tabIndex = 0;
           card.setAttribute("aria-pressed", String(done));
@@ -1398,12 +1425,20 @@
               return;
             }
 
-            togglePerson(person);
+            if (!canChangeDone && done) {
+              startDurationEntry(person, true);
+            } else {
+              togglePerson(person);
+            }
           });
           card.addEventListener("keydown", event => {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
-              togglePerson(person);
+              if (!canChangeDone && done) {
+                startDurationEntry(person, true);
+              } else {
+                togglePerson(person);
+              }
             }
           });
         }
