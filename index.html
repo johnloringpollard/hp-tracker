@@ -711,10 +711,17 @@
       .segmented, .date-controls { width: 100%; }
       .date-controls {
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto auto;
+        grid-template-columns: auto minmax(0, 1fr) auto;
       }
       .date-display {
         min-width: 0;
+        justify-content: center;
+        font-size: 0.95rem;
+        line-height: 1.15;
+        padding: 10px 12px;
+      }
+      .today-btn {
+        grid-column: 1 / -1;
       }
       .tab { flex: 1; }
       .daily-grid { grid-template-columns: 1fr; }
