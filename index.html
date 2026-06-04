@@ -712,14 +712,8 @@
       .date-controls {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto;
-        grid-template-areas:
-          "date date date"
-          "prev today next";
       }
-      #prevBtn { grid-area: prev; }
-      #nextBtn { grid-area: next; }
       .date-display {
-        grid-area: date;
         min-width: 0;
         justify-content: space-between;
         font-size: 0.95rem;
@@ -727,7 +721,7 @@
         padding: 10px 12px;
       }
       .today-btn {
-        grid-area: today;
+        display: none;
       }
       .tab { flex: 1; }
       .daily-grid { grid-template-columns: 1fr; }
