@@ -83,7 +83,7 @@
       display: flex;
       gap: 12px;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
 
     .segmented {
@@ -115,7 +115,8 @@
       display: flex;
       gap: 8px;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      min-width: 0;
     }
 
     button,
@@ -152,8 +153,8 @@
     }
 
     .date-display {
-      flex: 1 1 280px;
-      min-width: 260px;
+      flex: 0 0 auto;
+      min-width: 190px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -162,10 +163,11 @@
       text-align: left;
     }
 
-    .date-display::after {
-      content: "▾";
-      color: var(--muted);
-      font-size: 0.9rem;
+    .date-calendar {
+      color: #111827;
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
     }
 
     .native-date-input {
@@ -562,10 +564,6 @@
         font-size: 1.25rem;
         letter-spacing: -0.03em;
       }
-      .date-display {
-        flex-basis: 100%;
-        min-width: 0;
-      }
       .progress-stat-line {
         margin-top: 6px;
       }
@@ -575,8 +573,18 @@
       .progress-percent {
         font-size: 1.25rem;
       }
-      .controls { align-items: stretch; }
+      .controls {
+        align-items: stretch;
+        flex-wrap: wrap;
+      }
       .segmented, .date-controls { width: 100%; }
+      .date-controls {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
+      }
+      .date-display {
+        min-width: 0;
+      }
       .tab { flex: 1; }
       .daily-grid { grid-template-columns: 1fr; }
     }
@@ -597,7 +605,15 @@
 
           <div class="date-controls">
             <button class="icon-btn" id="prevBtn" aria-label="Previous day or week">←</button>
-            <button class="date-display" id="selectedDateLabel" type="button">—</button>
+            <button class="date-display" id="selectedDateLabel" type="button">
+              <span id="selectedDateText">—</span>
+              <svg class="date-calendar" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="17" rx="2"></rect>
+                <path d="M8 2v4"></path>
+                <path d="M16 2v4"></path>
+                <path d="M3 10h18"></path>
+              </svg>
+            </button>
             <input class="native-date-input" type="date" id="datePicker" aria-label="Selected date" />
             <button class="icon-btn" id="nextBtn" aria-label="Next day or week">→</button>
             <button class="today-btn" id="todayBtn">Today</button>
@@ -684,6 +700,7 @@
     const nextBtn = document.getElementById("nextBtn");
     const clearBtn = document.getElementById("clearBtn");
     const selectedDateLabel = document.getElementById("selectedDateLabel");
+    const selectedDateText = document.getElementById("selectedDateText");
     const doneCount = document.getElementById("doneCount");
     const percentDone = document.getElementById("percentDone");
     const streakCount = document.getElementById("streakCount");
@@ -909,6 +926,13 @@
       return parseDate(key).toLocaleDateString(undefined, options);
     }
 
+    function formatDateControl(key) {
+      const date = parseDate(key);
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${month}/${day}/${date.getFullYear()}`;
+    }
+
     function getDayData(key) {
       if (!data[key]) data[key] = {};
       return data[key];
@@ -1097,10 +1121,11 @@
       const streak = getStreakEndingAt(selectedDate);
       const isToday = selectedDate === todayKey();
 
-      selectedDateLabel.textContent = isToday
+      const readableDate = isToday
         ? `Today - ${formatDate(selectedDate, { weekday: "short", month: "long", day: "numeric" })}`
         : formatDate(selectedDate, { weekday: "long", month: "short", day: "numeric" });
-      selectedDateLabel.setAttribute("aria-label", `Selected date ${selectedDateLabel.textContent}. Open date picker.`);
+      selectedDateText.textContent = formatDateControl(selectedDate);
+      selectedDateLabel.setAttribute("aria-label", `Selected date ${readableDate}. Open date picker.`);
       doneCount.textContent = `${count} / ${people.length} complete`;
       percentDone.textContent = `${percent}%`;
       streakCount.textContent = `${streak} ${streak === 1 ? "day" : "days"}`;
