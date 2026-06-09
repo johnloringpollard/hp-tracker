@@ -539,6 +539,8 @@
       text-align: left;
       touch-action: manipulation;
       user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     .person-card.readonly {
@@ -642,6 +644,9 @@
       color: var(--text);
       font-weight: 800;
       box-shadow: inset 0 1px 0 rgba(20, 31, 52, 0.03);
+      user-select: text;
+      -webkit-user-select: text;
+      -webkit-touch-callout: default;
     }
 
     .time-save,
@@ -1548,6 +1553,16 @@
 
       if (!trimmed) return { seconds: null, error: "" };
 
+      const compactMatch = trimmed.match(/^(\d{3,})$/);
+      if (compactMatch) {
+        const seconds = Number(compactMatch[1].slice(-2));
+        const minutes = Number(compactMatch[1].slice(0, -2));
+
+        if (seconds < 60 && minutes * 60 + seconds > 0) {
+          return { seconds: minutes * 60 + seconds, error: "" };
+        }
+      }
+
       const colonMatch = trimmed.match(/^(\d+)\s*:\s*([0-5]?\d)$/);
       if (colonMatch) {
         return {
@@ -1581,7 +1596,7 @@
           : { seconds: null, error: "Enter a time greater than zero." };
       }
 
-      return { seconds: null, error: "Use a time like 8:30 or 8 minutes 30 seconds." };
+      return { seconds: null, error: "Use a time like 8:30, 830, or 8 minutes 30 seconds." };
     }
 
     function clearEditing() {
@@ -1788,7 +1803,7 @@
           ${editing ? `
             <form class="time-form">
               <div class="time-input-row">
-                <input class="time-input" type="text" inputmode="text" autocomplete="off" placeholder="8:30" value="${escapeHtml(timeDraft)}" aria-label="Completion time for ${escapeHtml(person)}" />
+                <input class="time-input" type="text" inputmode="numeric" pattern="[0-9:]*" enterkeyhint="done" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="8:30 or 830" value="${escapeHtml(timeDraft)}" aria-label="Completion time for ${escapeHtml(person)}" />
                 <button class="time-save" type="submit">Save</button>
                 <button class="time-skip" type="button">Skip</button>
               </div>
@@ -1814,7 +1829,10 @@
 
           skip.addEventListener("click", () => completePerson(person, card));
 
-          requestAnimationFrame(() => input.focus());
+          requestAnimationFrame(() => {
+            input.focus({ preventScroll: true });
+            input.setSelectionRange(input.value.length, input.value.length);
+          });
         } else {
           let longPressTimer = null;
           let longPressHandled = false;
@@ -1827,7 +1845,11 @@
           };
 
           if (done) {
-            card.addEventListener("pointerdown", () => {
+            card.addEventListener("selectstart", event => event.preventDefault());
+            card.addEventListener("pointerdown", event => {
+              if (!event.isPrimary || event.button !== 0) return;
+
+              event.preventDefault();
               clearLongPress();
               longPressHandled = false;
               longPressTimer = setTimeout(() => {
