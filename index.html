@@ -1611,13 +1611,25 @@
         && editingCheckin.person === person;
     }
 
-    function startDurationEntry(person, prefill = false) {
+    function focusDurationInput(person) {
+      const input = dailyGrid.querySelector(`[data-person="${CSS.escape(person)}"] .time-input`);
+      if (!input) return;
+
+      input.focus({ preventScroll: true });
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+
+    function startDurationEntry(person, prefill = false, focusImmediately = false) {
       if (!canChangeDoneState() && !isDone(selectedDate, person)) return;
 
       editingCheckin = { key: selectedDate, person };
       timeDraft = prefill ? formatDuration(getDurationSeconds(selectedDate, person)) : "";
       timeError = "";
       render();
+
+      if (focusImmediately) {
+        focusDurationInput(person);
+      }
     }
 
     function triggerHaptic(input = "light", options) {
@@ -1830,12 +1842,14 @@
           skip.addEventListener("click", () => completePerson(person, card));
 
           requestAnimationFrame(() => {
-            input.focus({ preventScroll: true });
-            input.setSelectionRange(input.value.length, input.value.length);
+            if (document.activeElement !== input) {
+              focusDurationInput(person);
+            }
           });
         } else {
           let longPressTimer = null;
-          let longPressHandled = false;
+          let longPressReady = false;
+          let suppressNextClick = false;
 
           const clearLongPress = () => {
             if (longPressTimer) {
@@ -1849,29 +1863,36 @@
             card.addEventListener("pointerdown", event => {
               if (!event.isPrimary || event.button !== 0) return;
 
-              event.preventDefault();
               clearLongPress();
-              longPressHandled = false;
+              longPressReady = false;
+              suppressNextClick = false;
               longPressTimer = setTimeout(() => {
-                longPressHandled = true;
-                startDurationEntry(person, true);
+                longPressReady = true;
               }, 550);
             });
-            card.addEventListener("pointerup", clearLongPress);
+            card.addEventListener("pointerup", event => {
+              clearLongPress();
+              if (!longPressReady) return;
+
+              event.preventDefault();
+              suppressNextClick = true;
+              longPressReady = false;
+              startDurationEntry(person, true, true);
+            });
             card.addEventListener("pointercancel", clearLongPress);
             card.addEventListener("pointerleave", clearLongPress);
             card.addEventListener("contextmenu", event => event.preventDefault());
           }
 
           card.addEventListener("click", event => {
-            if (longPressHandled) {
+            if (suppressNextClick) {
               event.preventDefault();
-              longPressHandled = false;
+              suppressNextClick = false;
               return;
             }
 
             if (!canChangeDone && done) {
-              startDurationEntry(person, true);
+              startDurationEntry(person, true, true);
             } else {
               togglePerson(person);
             }
@@ -1880,7 +1901,7 @@
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               if (!canChangeDone && done) {
-                startDurationEntry(person, true);
+                startDurationEntry(person, true, true);
               } else {
                 togglePerson(person);
               }
