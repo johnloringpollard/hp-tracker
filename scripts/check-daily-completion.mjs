@@ -2,7 +2,7 @@ import admin from "firebase-admin";
 import twilio from "twilio";
 import webpush from "web-push";
 
-const people = ["Alban", "Brian", "Cara", "Dave", "John", "Kevin", "Lindsay", "Lloyd", "Marshall", "Ron"];
+const people = ["Alban", "Brian", "Cara", "Dave", "Jad", "John", "Kevin", "Lindsay", "Lloyd", "Marshall", "Ron"];
 
 const {
   DAILYFIT_URL = "https://johnloringpollard.github.io/hp-tracker/",
