@@ -5,7 +5,7 @@ import webpush from "web-push";
 const people = ["Pollard", "Harris", "Dan", "Biron", "Koster", "Kelly", "Billy", "Tyler"];
 
 const {
-  DAILYFIT_URL = "https://johnloringpollard.github.io/dailyfit/",
+  DAILYFIT_URL = "https://johnloringpollard.github.io/hp-tracker/",
   FIREBASE_SERVICE_ACCOUNT_JSON,
   GITHUB_EVENT_NAME,
   SEND_COMPLETE_TEXT = "true",
@@ -16,7 +16,7 @@ const {
   TWILIO_FROM_NUMBER,
   TWILIO_MESSAGING_SERVICE_SID,
   VAPID_PRIVATE_KEY,
-  VAPID_PUBLIC_KEY = "BJ7PO8TgpP8R1bL_1ZMzUsWKF677IusRS90F7NjPXWF2FbtXjZxfRr5rir5KFmHLJbylXmH6lMlvKm_zESpX5Tk",
+  VAPID_PUBLIC_KEY = "BI1EhQtI0yo7ZvCMtAt9QGANGxtYRJ_fHpC0iaGcHgZUGQ3m0OBAd7yHQX7TziCgxIpTZlcocENSxWmi8yWOnns",
   VAPID_SUBJECT
 } = process.env;
 

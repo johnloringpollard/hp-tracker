@@ -4,7 +4,16 @@ A simple shared daily fitness check-in app.
 
 ## Deploy
 
-This repo is designed to run as a static GitHub Pages site. Check-ins are saved to Firebase Firestore.
+The app is hosted by GitHub Pages at:
+
+https://johnloringpollard.github.io/hp-tracker/
+
+Check-ins and browser push subscriptions are stored in the Firebase project
+selected by `.firebaserc`. Deploy the Firestore rules after signing in:
+
+```sh
+npx firebase-tools deploy --only firestore:rules
+```
 
 ## Daily notification check
 
@@ -23,16 +32,10 @@ Optional Twilio SMS secrets:
 - `TWILIO_FROM_NUMBER` or `TWILIO_MESSAGING_SERVICE_SID`
 - `SMS_RECIPIENTS` as comma-separated E.164 numbers, such as `+15551234567,+15557654321`
 
-The app stores browser push subscriptions in Firestore at `pushSubscriptions/{subscriptionId}`. Add Firestore rules for that collection:
+The public VAPID key is safe to commit and must match in `index.html`, the
+notification script, and the workflow. Keep the private key only in the
+`VAPID_PRIVATE_KEY` repository secret.
 
-```js
-match /pushSubscriptions/{subscriptionId} {
-  allow read: if false;
-  allow create, update: if request.resource.data.keys().hasOnly([
-    'endpoint', 'subscription', 'updatedAt', 'userAgent'
-  ])
-  && request.resource.data.endpoint is string
-  && request.resource.data.subscription is map;
-  allow delete: if true;
-}
-```
+The app intentionally permits public check-in reads and writes because it has
+no sign-in screen. Use Firebase Authentication and stricter rules before
+storing sensitive or private data.
