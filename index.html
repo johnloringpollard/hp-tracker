@@ -635,18 +635,34 @@
       gap: 8px;
     }
 
+    .time-fields {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+    }
+
     .time-input {
       min-width: 0;
-      grid-column: 1 / -1;
+      width: 100%;
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 10px 12px;
       color: var(--text);
+      font-size: 1rem;
       font-weight: 800;
+      text-align: center;
       box-shadow: inset 0 1px 0 rgba(20, 31, 52, 0.03);
       user-select: text;
       -webkit-user-select: text;
       -webkit-touch-callout: default;
+    }
+
+    .time-separator {
+      color: var(--muted);
+      font-size: 1.4rem;
+      font-weight: 950;
     }
 
     .time-save,
@@ -1599,6 +1615,25 @@
       return { seconds: null, error: "Use a time like 8:30, 830, or 8 minutes 30 seconds." };
     }
 
+    function durationDraftParts(value) {
+      const trimmed = String(value || "").trim();
+      const colonMatch = trimmed.match(/^(\d*)\s*:\s*(\d*)$/);
+
+      if (colonMatch) {
+        return { minutes: colonMatch[1], seconds: colonMatch[2] };
+      }
+
+      const compactMatch = trimmed.match(/^(\d{3,})$/);
+      if (compactMatch) {
+        return {
+          minutes: compactMatch[1].slice(0, -2),
+          seconds: compactMatch[1].slice(-2)
+        };
+      }
+
+      return { minutes: trimmed, seconds: "" };
+    }
+
     function clearEditing() {
       editingCheckin = null;
       timeDraft = "";
@@ -1660,8 +1695,10 @@
       render();
     }
 
-    function submitDuration(person, card, input) {
-      timeDraft = input.value;
+    function submitDuration(person, card, minutesInput, secondsInput) {
+      const minutes = minutesInput.value.trim();
+      const seconds = secondsInput.value.trim();
+      timeDraft = minutes || seconds ? `${minutes || "0"}:${seconds || "00"}` : "";
       const result = parseDuration(timeDraft);
 
       if (result.error) {
@@ -1787,6 +1824,7 @@
         const editing = isEditing(person);
         const canChangeDone = canChangeDoneState();
         const duration = formatDuration(getDurationSeconds(selectedDate, person));
+        const draftParts = durationDraftParts(timeDraft);
         const statusText = done
           ? duration ? `Done in ${duration}` : canChangeDone ? "Done today" : "Done"
         : editing ? "Enter your time" : "Not done yet";
@@ -1815,7 +1853,11 @@
           ${editing ? `
             <form class="time-form">
               <div class="time-input-row">
-                <input class="time-input" type="text" inputmode="numeric" pattern="[0-9:]*" enterkeyhint="done" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="8:30 or 830" value="${escapeHtml(timeDraft)}" aria-label="Completion time for ${escapeHtml(person)}" />
+                <div class="time-fields">
+                  <input class="time-input time-minutes" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" autocomplete="off" placeholder="8" value="${escapeHtml(draftParts.minutes)}" aria-label="Completion minutes for ${escapeHtml(person)}" />
+                  <span class="time-separator" aria-hidden="true">:</span>
+                  <input class="time-input time-seconds" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" placeholder="12" maxlength="2" value="${escapeHtml(draftParts.seconds)}" aria-label="Completion seconds for ${escapeHtml(person)}" />
+                </div>
                 <button class="time-save" type="submit">Save</button>
                 <button class="time-skip" type="button">Skip</button>
               </div>
@@ -1826,23 +1868,33 @@
 
         if (editing) {
           const form = card.querySelector(".time-form");
-          const input = card.querySelector(".time-input");
+          const minutesInput = card.querySelector(".time-minutes");
+          const secondsInput = card.querySelector(".time-seconds");
           const skip = card.querySelector(".time-skip");
 
           form.addEventListener("submit", event => {
             event.preventDefault();
-            submitDuration(person, card, input);
+            submitDuration(person, card, minutesInput, secondsInput);
           });
 
-          input.addEventListener("input", event => {
-            timeDraft = event.target.value;
+          const updateTimeDraft = () => {
+            timeDraft = `${minutesInput.value}:${secondsInput.value}`;
             timeError = "";
+          };
+
+          minutesInput.addEventListener("input", updateTimeDraft);
+          secondsInput.addEventListener("input", updateTimeDraft);
+          minutesInput.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              secondsInput.focus();
+            }
           });
 
           skip.addEventListener("click", () => completePerson(person, card));
 
           requestAnimationFrame(() => {
-            if (document.activeElement !== input) {
+            if (document.activeElement !== minutesInput && document.activeElement !== secondsInput) {
               focusDurationInput(person);
             }
           });
