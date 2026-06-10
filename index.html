@@ -1013,7 +1013,7 @@
       max-width: min(88vw, 720px);
       padding: 14px 24px 16px;
       border: 1px solid rgba(255, 255, 255, 0.56);
-      border-radius: 999px;
+      border-radius: 24px;
       color: #fff;
       background: rgba(14, 20, 33, 0.78);
       box-shadow:
@@ -1028,11 +1028,22 @@
       pointer-events: none;
       opacity: 0;
       transform: translate(-50%, -22px) scale(0.82);
-      animation: celebration-banner 10s cubic-bezier(.2,.85,.2,1) forwards;
+      animation: celebration-banner 15s cubic-bezier(.2,.85,.2,1) forwards;
     }
 
     .celebration-banner strong {
+      display: block;
       color: #ffd44d;
+      font-size: 1.12em;
+    }
+
+    .celebration-message {
+      display: block;
+      margin-top: 2px;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 0.72em;
+      font-weight: 750;
+      letter-spacing: -0.015em;
     }
 
     .celebration-flash {
@@ -1046,12 +1057,12 @@
     }
 
     @keyframes celebration-banner {
-      0%, 4% { opacity: 0; transform: translate(-50%, -22px) scale(0.82); }
-      8%, 38% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-      43%, 78% { opacity: 0; transform: translate(-50%, -8px) scale(0.95); }
-      82% { opacity: 1; transform: translate(-50%, 0) scale(1.08); }
-      88% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-      100% { opacity: 0; transform: translate(-50%, -14px) scale(0.92); }
+      0%, 3% { opacity: 0; transform: translate(-50%, -22px) scale(0.82); }
+      6%, 25% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      29%, 55% { opacity: 0; transform: translate(-50%, -8px) scale(0.95); }
+      58% { opacity: 1; transform: translate(-50%, 0) scale(1.08); }
+      64%, 91% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, 14px) scale(0.94); }
     }
 
     @keyframes celebration-flash {
@@ -2307,7 +2318,8 @@
       const rockets = [];
       const shockwaves = [];
       const rocketTimes = [4.65, 5.05, 5.48, 5.92, 6.36, 6.82, 7.25, 7.68, 8.05, 8.4, 8.72, 9.02];
-      const duration = reducedMotion ? 1400 : 10000;
+      const sequenceDuration = reducedMotion ? 1400 : 15000;
+      const cleanupDeadline = reducedMotion ? 2600 : 24000;
       const startTime = performance.now();
       let lastTime = startTime;
       let animationFrame = 0;
@@ -2317,15 +2329,26 @@
       let fuseEmission = 0;
       let nextTick = 1.15;
       let nextRocket = 0;
+      let nextGoldenRain = 9.7;
       let detonated = false;
       let finaleStarted = false;
+      let heartMomentStarted = false;
+      let warmEmbraceStarted = false;
+      let curtainStarted = false;
+      let afterglowStarted = false;
+      let bannerPhase = 0;
       let stopped = false;
 
       canvas.className = "celebration-layer";
       canvas.setAttribute("aria-hidden", "true");
       banner.className = "celebration-banner";
       banner.setAttribute("role", "status");
-      banner.innerHTML = `<strong>${escapeHtml(person)}</strong> crushed it today!`;
+      banner.innerHTML = `
+        <strong>${escapeHtml(person)} crushed it today!</strong>
+        <span class="celebration-message">That effort counts. Soak this in.</span>
+      `;
+      const bannerTitle = banner.querySelector("strong");
+      const bannerMessage = banner.querySelector(".celebration-message");
       document.body.append(canvas, banner);
 
       function sizeCanvas() {
@@ -2358,7 +2381,8 @@
           color: options.color || colors[Math.floor(Math.random() * colors.length)],
           rotation: Math.random() * Math.PI,
           spin: (Math.random() - 0.5) * 14,
-          shape: options.shape || (Math.random() > 0.72 ? "star" : "confetti")
+          shape: options.shape || (Math.random() > 0.72 ? "star" : "confetti"),
+          naturalFall: Boolean(options.naturalFall)
         });
       }
 
@@ -2415,6 +2439,22 @@
         context.restore();
       }
 
+      function drawHeart(x, y, radius, rotation, color, alpha) {
+        context.save();
+        context.translate(x, y);
+        context.rotate(rotation);
+        context.scale(radius / 16, radius / 16);
+        context.beginPath();
+        context.moveTo(0, 5);
+        context.bezierCurveTo(-15, -4, -8, -15, 0, -7);
+        context.bezierCurveTo(8, -15, 15, -4, 0, 5);
+        context.closePath();
+        context.globalAlpha = alpha;
+        context.fillStyle = color;
+        context.fill();
+        context.restore();
+      }
+
       function drawFuse(elapsed) {
         if (elapsed < 0.85 || elapsed > 4.22) return;
 
@@ -2464,8 +2504,8 @@
       function updateParticles(delta) {
         for (let index = particles.length - 1; index >= 0; index--) {
           const particle = particles[index];
-          particle.life -= delta;
-          if (particle.life <= 0) {
+          if (!particle.naturalFall) particle.life -= delta;
+          if ((!particle.naturalFall && particle.life <= 0) || particle.y > height + 100) {
             particles.splice(index, 1);
             continue;
           }
@@ -2480,9 +2520,13 @@
 
       function drawParticles() {
         particles.forEach(particle => {
-          const alpha = Math.min(1, particle.life / Math.min(0.45, particle.maxLife));
+          const alpha = particle.naturalFall ? 1 : Math.min(1, particle.life / Math.min(0.45, particle.maxLife));
           if (particle.shape === "star") {
             drawStar(particle.x, particle.y, particle.size, particle.rotation, particle.color, alpha);
+            return;
+          }
+          if (particle.shape === "heart") {
+            drawHeart(particle.x, particle.y, particle.size, particle.rotation, particle.color, alpha);
             return;
           }
 
@@ -2599,6 +2643,125 @@
         triggerHaptic("success");
       }
 
+      function heartMoment() {
+        heartMomentStarted = true;
+        const centerX = width * 0.5;
+        const centerY = height * 0.39;
+        const scale = Math.min(width, height) * 0.17;
+        const points = width < 600 ? 58 : 82;
+
+        for (let index = 0; index < points; index++) {
+          const t = index / points * Math.PI * 2;
+          const heartX = 16 * Math.pow(Math.sin(t), 3);
+          const heartY = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+          addParticle(
+            centerX + heartX * scale / 18,
+            centerY - heartY * scale / 18,
+            {
+              angle: -Math.PI / 2 + (Math.random() - 0.5) * 0.8,
+              speed: 8 + Math.random() * 24,
+              gravity: 58 + Math.random() * 26,
+              drag: 0.996,
+              size: 5 + Math.random() * 6,
+              color: index % 4 === 0 ? "#ff668f" : index % 3 === 0 ? "#fff2a8" : "#ffd44d",
+              shape: index % 5 === 0 ? "heart" : "star",
+              naturalFall: true
+            }
+          );
+        }
+
+        addShockwave(centerX, centerY, scale * 1.2, "rgba(255, 212, 77, 0.86)");
+        triggerHaptic("success");
+      }
+
+      function warmEmbrace() {
+        warmEmbraceStarted = true;
+        const centerX = width * 0.5;
+        const centerY = height * 0.48;
+
+        for (let ring = 0; ring < 3; ring++) {
+          const count = width < 600 ? 24 : 36;
+          for (let index = 0; index < count; index++) {
+            const angle = index / count * Math.PI * 2;
+            addParticle(centerX, centerY, {
+              angle,
+              speed: 75 + ring * 48 + Math.random() * 24,
+              gravity: 72,
+              drag: 0.994,
+              size: 5 + Math.random() * 5,
+              color: ring === 1 ? "#ff9f43" : "#ffd44d",
+              shape: index % 7 === 0 ? "heart" : "star",
+              naturalFall: true
+            });
+          }
+        }
+
+        addShockwave(centerX, centerY, Math.min(width, height) * 0.48, "rgba(255, 177, 77, 0.74)");
+      }
+
+      function goldenRain() {
+        const count = width < 600 ? 5 : 8;
+        for (let index = 0; index < count; index++) {
+          const isHeart = Math.random() > 0.88;
+          addParticle(Math.random() * width, -24 - Math.random() * 70, {
+            angle: Math.PI / 2 + (Math.random() - 0.5) * 0.32,
+            speed: 45 + Math.random() * 75,
+            gravity: 38 + Math.random() * 34,
+            drag: 0.997,
+            size: 4 + Math.random() * 8,
+            color: isHeart ? "#ff668f" : Math.random() > 0.3 ? "#ffd44d" : colors[Math.floor(Math.random() * colors.length)],
+            shape: isHeart ? "heart" : Math.random() > 0.54 ? "star" : "confetti",
+            naturalFall: true
+          });
+        }
+      }
+
+      function victoryCurtain() {
+        curtainStarted = true;
+        const count = width < 600 ? 88 : 150;
+
+        for (let index = 0; index < count; index++) {
+          const fromLeft = index % 2 === 0;
+          const x = fromLeft ? -12 : width + 12;
+          const targetAngle = fromLeft
+            ? -Math.PI / 2 + 0.35 + Math.random() * 0.55
+            : -Math.PI / 2 - 0.35 - Math.random() * 0.55;
+          addParticle(x, height + 12, {
+            angle: targetAngle,
+            speed: 380 + Math.random() * 310,
+            gravity: 155 + Math.random() * 65,
+            drag: 0.994,
+            size: 5 + Math.random() * 10,
+            color: index % 5 === 0 ? "#fff4b0" : colors[index % colors.length],
+            shape: index % 9 === 0 ? "heart" : index % 4 === 0 ? "star" : "confetti",
+            naturalFall: true
+          });
+        }
+
+        flash();
+        triggerHaptic("heavy");
+      }
+
+      function releaseAfterglow() {
+        afterglowStarted = true;
+        const count = width < 600 ? 76 : 120;
+
+        for (let index = 0; index < count; index++) {
+          const column = (index + 0.5) / count;
+          const isKeepsake = index % 8 === 0;
+          addParticle(column * width + (Math.random() - 0.5) * 32, -40 + Math.random() * height * 0.42, {
+            angle: Math.PI / 2 + (Math.random() - 0.5) * 0.22,
+            speed: 18 + Math.random() * 44,
+            gravity: 18 + Math.random() * 18,
+            drag: 0.999,
+            size: isKeepsake ? 8 + Math.random() * 7 : 5 + Math.random() * 9,
+            color: isKeepsake ? "#ff7398" : index % 3 === 0 ? "#fff3ae" : "#ffd44d",
+            shape: isKeepsake ? "heart" : index % 4 === 0 ? "star" : "confetti",
+            naturalFall: true
+          });
+        }
+      }
+
       function stop() {
         if (stopped) return;
         stopped = true;
@@ -2643,6 +2806,30 @@
           }
 
           if (elapsed >= 8.82 && !finaleStarted) finale();
+
+          if (elapsed >= 9.55 && bannerPhase === 0) {
+            bannerPhase = 1;
+            bannerTitle.textContent = `${person}, you showed up.`;
+            bannerMessage.textContent = "That is how strong days are built.";
+          }
+
+          if (elapsed >= 10.15 && !heartMomentStarted) heartMoment();
+
+          while (elapsed >= nextGoldenRain && nextGoldenRain < 15) {
+            goldenRain();
+            nextGoldenRain += 0.19;
+          }
+
+          if (elapsed >= 12.15 && !warmEmbraceStarted) warmEmbrace();
+
+          if (elapsed >= 12.65 && bannerPhase === 1) {
+            bannerPhase = 2;
+            bannerTitle.textContent = "Day complete. You earned this.";
+            bannerMessage.textContent = "Carry that proud feeling with you.";
+          }
+
+          if (elapsed >= 14.15 && !curtainStarted) victoryCurtain();
+          if (elapsed >= 14.72 && !afterglowStarted) releaseAfterglow();
         }
 
         updateRockets(delta);
@@ -2652,7 +2839,9 @@
         drawRockets();
         drawParticles();
 
-        if (elapsedMs >= duration) {
+        const sequenceComplete = elapsedMs >= sequenceDuration;
+        const effectsFinished = particles.length === 0 && rockets.length === 0 && shockwaves.length === 0;
+        if ((sequenceComplete && effectsFinished) || elapsedMs >= cleanupDeadline) {
           stop();
           return;
         }
