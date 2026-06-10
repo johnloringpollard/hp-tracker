@@ -996,33 +996,72 @@
       padding: 8px 2px 0;
     }
 
-    .confetti {
+    .celebration-layer {
       position: fixed;
-      width: 10px;
-      height: 10px;
-      top: var(--y);
-      left: var(--x);
-      border-radius: 999px;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
-      z-index: 20;
-      animation: confetti 850ms ease-out forwards;
-      opacity: 0.95;
+      z-index: 50;
     }
 
-    .confetti.mobile-burst {
-      width: 13px;
-      height: 13px;
-      animation-duration: 1050ms;
+    .celebration-banner {
+      position: fixed;
+      top: clamp(86px, 15vh, 150px);
+      left: 50%;
+      z-index: 51;
+      max-width: min(88vw, 720px);
+      padding: 14px 24px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.56);
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(14, 20, 33, 0.78);
+      box-shadow:
+        0 18px 55px rgba(0, 0, 0, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      font-size: clamp(1.05rem, 3.5vw, 1.55rem);
+      font-weight: 950;
+      letter-spacing: -0.035em;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -22px) scale(0.82);
+      animation: celebration-banner 10s cubic-bezier(.2,.85,.2,1) forwards;
     }
 
-    @keyframes confetti {
-      0% {
-        transform: translate(0, 0) scale(0.7);
-        opacity: 1;
-      }
-      100% {
-        transform: translate(var(--dx), var(--dy)) rotate(280deg) scale(0.1);
-        opacity: 0;
+    .celebration-banner strong {
+      color: #ffd44d;
+    }
+
+    .celebration-flash {
+      position: fixed;
+      inset: 0;
+      z-index: 49;
+      pointer-events: none;
+      opacity: 0;
+      background: #fff8d8;
+      animation: celebration-flash 620ms ease-out forwards;
+    }
+
+    @keyframes celebration-banner {
+      0%, 4% { opacity: 0; transform: translate(-50%, -22px) scale(0.82); }
+      8%, 38% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      43%, 78% { opacity: 0; transform: translate(-50%, -8px) scale(0.95); }
+      82% { opacity: 1; transform: translate(-50%, 0) scale(1.08); }
+      88% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -14px) scale(0.92); }
+    }
+
+    @keyframes celebration-flash {
+      0% { opacity: 0.82; }
+      100% { opacity: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .celebration-banner {
+        animation-duration: 1400ms;
       }
     }
 
@@ -1362,6 +1401,7 @@
     let editingCheckin = null;
     let timeDraft = "";
     let timeError = "";
+    let activeCelebration = null;
 
     datePicker.value = selectedDate;
     setupThemeControls();
@@ -1919,7 +1959,7 @@
 
       if (card) {
         card.classList.add("pop");
-        launchConfetti(card);
+        launchCelebration(person, card);
         setTimeout(() => card.classList.remove("pop"), 560);
       }
 
@@ -1964,6 +2004,9 @@
       const wasDone = isDone(selectedDate, person);
 
       if (wasDone) {
+        if (activeCelebration?.person === person) {
+          activeCelebration.stop();
+        }
         delete day[person];
         clearEditing();
         save();
@@ -2247,30 +2290,380 @@
       }).join("");
     }
 
-    function launchConfetti(element) {
-      const rect = element.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
-      const colors = ["#2f6df6", "#1f9d55", "#ffb020", "#ef476f", "#7c3aed"];
-      const isSmallScreen = window.matchMedia("(max-width: 720px)").matches;
-      const pieces = isSmallScreen ? 42 : 24;
-      const baseDistance = isSmallScreen ? 95 : 70;
-      const distanceRange = isSmallScreen ? 130 : 95;
-      const duration = isSmallScreen ? 1100 : 900;
+    function launchCelebration(person, element) {
+      activeCelebration?.stop();
 
-      for (let i = 0; i < pieces; i++) {
-        const piece = document.createElement("span");
-        const angle = Math.random() * Math.PI * 2;
-        const distance = baseDistance + Math.random() * distanceRange;
-        piece.className = `confetti${isSmallScreen ? " mobile-burst" : ""}`;
-        piece.style.setProperty("--x", `${x}px`);
-        piece.style.setProperty("--y", `${y}px`);
-        piece.style.setProperty("--dx", `${Math.cos(angle) * distance}px`);
-        piece.style.setProperty("--dy", `${Math.sin(angle) * distance}px`);
-        piece.style.background = colors[i % colors.length];
-        document.body.appendChild(piece);
-        setTimeout(() => piece.remove(), duration);
+      const rect = element.getBoundingClientRect();
+      const origin = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      const banner = document.createElement("div");
+      const colors = ["#3f7cff", "#42d77d", "#ffd44d", "#ff4f87", "#a87cff", "#ff7a18", "#45d7ff"];
+      const particles = [];
+      const rockets = [];
+      const shockwaves = [];
+      const rocketTimes = [4.65, 5.05, 5.48, 5.92, 6.36, 6.82, 7.25, 7.68, 8.05, 8.4, 8.72, 9.02];
+      const duration = reducedMotion ? 1400 : 10000;
+      const startTime = performance.now();
+      let lastTime = startTime;
+      let animationFrame = 0;
+      let deviceScale = 1;
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+      let fuseEmission = 0;
+      let nextTick = 1.15;
+      let nextRocket = 0;
+      let detonated = false;
+      let finaleStarted = false;
+      let stopped = false;
+
+      canvas.className = "celebration-layer";
+      canvas.setAttribute("aria-hidden", "true");
+      banner.className = "celebration-banner";
+      banner.setAttribute("role", "status");
+      banner.innerHTML = `<strong>${escapeHtml(person)}</strong> crushed it today!`;
+      document.body.append(canvas, banner);
+
+      function sizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        deviceScale = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(width * deviceScale);
+        canvas.height = Math.round(height * deviceScale);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        context.setTransform(deviceScale, 0, 0, deviceScale, 0, 0);
       }
+
+      function addParticle(x, y, options = {}) {
+        if (particles.length >= 650) particles.splice(0, particles.length - 649);
+
+        const angle = options.angle ?? Math.random() * Math.PI * 2;
+        const speed = options.speed ?? 120 + Math.random() * 280;
+        const life = options.life ?? 1.4 + Math.random() * 1.4;
+        particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed + (options.vx || 0),
+          vy: Math.sin(angle) * speed + (options.vy || 0),
+          gravity: options.gravity ?? 260,
+          drag: options.drag ?? 0.985,
+          life,
+          maxLife: life,
+          size: options.size ?? 4 + Math.random() * 7,
+          color: options.color || colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * Math.PI,
+          spin: (Math.random() - 0.5) * 14,
+          shape: options.shape || (Math.random() > 0.72 ? "star" : "confetti")
+        });
+      }
+
+      function burst(x, y, count, power = 1, shape) {
+        for (let index = 0; index < count; index++) {
+          addParticle(x, y, {
+            speed: (100 + Math.random() * 360) * power,
+            gravity: shape === "spark" ? 120 : 280,
+            life: shape === "spark" ? 0.55 + Math.random() * 0.8 : 1.5 + Math.random() * 1.8,
+            size: shape === "spark" ? 2 + Math.random() * 4 : 4 + Math.random() * 9,
+            shape
+          });
+        }
+      }
+
+      function addShockwave(x, y, maxRadius, color = "rgba(255, 255, 255, 0.9)") {
+        shockwaves.push({ x, y, radius: 8, maxRadius, life: 0.75, maxLife: 0.75, color });
+      }
+
+      function launchRocket(offset = 0) {
+        const x = Math.max(30, Math.min(width - 30, width * (0.12 + Math.random() * 0.76) + offset));
+        rockets.push({
+          x,
+          y: height + 20,
+          vx: (Math.random() - 0.5) * 70,
+          vy: -(470 + Math.random() * 210),
+          targetY: height * (0.13 + Math.random() * 0.32),
+          color: colors[Math.floor(Math.random() * colors.length)]
+        });
+      }
+
+      function flash() {
+        const flashLayer = document.createElement("div");
+        flashLayer.className = "celebration-flash";
+        flashLayer.setAttribute("aria-hidden", "true");
+        document.body.appendChild(flashLayer);
+        setTimeout(() => flashLayer.remove(), 650);
+      }
+
+      function drawStar(x, y, radius, rotation, color, alpha) {
+        context.save();
+        context.translate(x, y);
+        context.rotate(rotation);
+        context.beginPath();
+        for (let point = 0; point < 10; point++) {
+          const distance = point % 2 === 0 ? radius : radius * 0.42;
+          const angle = -Math.PI / 2 + point * Math.PI / 5;
+          context.lineTo(Math.cos(angle) * distance, Math.sin(angle) * distance);
+        }
+        context.closePath();
+        context.globalAlpha = alpha;
+        context.fillStyle = color;
+        context.fill();
+        context.restore();
+      }
+
+      function drawFuse(elapsed) {
+        if (elapsed < 0.85 || elapsed > 4.22) return;
+
+        const progress = Math.min(1, (elapsed - 0.85) / 3.37);
+        const endX = width * 0.5;
+        const endY = height * 0.52;
+        const sparkX = origin.x + (endX - origin.x) * progress + Math.sin(progress * Math.PI * 8) * 24;
+        const sparkY = origin.y + (endY - origin.y) * progress + Math.sin(progress * Math.PI * 4) * 32;
+
+        context.save();
+        context.lineCap = "round";
+        context.strokeStyle = "rgba(255, 194, 71, 0.74)";
+        context.lineWidth = 4;
+        context.shadowColor = "#ff8b22";
+        context.shadowBlur = 12;
+        context.beginPath();
+        context.moveTo(origin.x, origin.y);
+        for (let step = 1; step <= 24; step++) {
+          const amount = progress * step / 24;
+          context.lineTo(
+            origin.x + (endX - origin.x) * amount + Math.sin(amount * Math.PI * 8) * 24,
+            origin.y + (endY - origin.y) * amount + Math.sin(amount * Math.PI * 4) * 32
+          );
+        }
+        context.stroke();
+        context.fillStyle = "#fff7a8";
+        context.beginPath();
+        context.arc(sparkX, sparkY, 7 + Math.sin(elapsed * 24) * 2, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+
+        fuseEmission += 1.5;
+        while (fuseEmission >= 1) {
+          fuseEmission -= 1;
+          const isFuseConfetti = Math.random() > 0.72;
+          addParticle(sparkX, sparkY, {
+            speed: 45 + Math.random() * 150,
+            gravity: isFuseConfetti ? 220 : 90,
+            life: isFuseConfetti ? 0.8 + Math.random() * 0.6 : 0.35 + Math.random() * 0.55,
+            size: isFuseConfetti ? 4 + Math.random() * 5 : 2 + Math.random() * 4,
+            color: isFuseConfetti ? colors[Math.floor(Math.random() * colors.length)] : Math.random() > 0.45 ? "#ffd44d" : "#ff6b22",
+            shape: isFuseConfetti ? "confetti" : "spark"
+          });
+        }
+      }
+
+      function updateParticles(delta) {
+        for (let index = particles.length - 1; index >= 0; index--) {
+          const particle = particles[index];
+          particle.life -= delta;
+          if (particle.life <= 0) {
+            particles.splice(index, 1);
+            continue;
+          }
+
+          particle.vx *= Math.pow(particle.drag, delta * 60);
+          particle.vy = particle.vy * Math.pow(particle.drag, delta * 60) + particle.gravity * delta;
+          particle.x += particle.vx * delta;
+          particle.y += particle.vy * delta;
+          particle.rotation += particle.spin * delta;
+        }
+      }
+
+      function drawParticles() {
+        particles.forEach(particle => {
+          const alpha = Math.min(1, particle.life / Math.min(0.45, particle.maxLife));
+          if (particle.shape === "star") {
+            drawStar(particle.x, particle.y, particle.size, particle.rotation, particle.color, alpha);
+            return;
+          }
+
+          context.save();
+          context.translate(particle.x, particle.y);
+          context.rotate(particle.rotation);
+          context.globalAlpha = alpha;
+          context.fillStyle = particle.color;
+          if (particle.shape === "spark") {
+            context.shadowColor = particle.color;
+            context.shadowBlur = 9;
+            context.beginPath();
+            context.arc(0, 0, particle.size, 0, Math.PI * 2);
+            context.fill();
+          } else {
+            context.fillRect(-particle.size / 2, -particle.size / 3, particle.size, particle.size * 0.66);
+          }
+          context.restore();
+        });
+      }
+
+      function updateRockets(delta) {
+        for (let index = rockets.length - 1; index >= 0; index--) {
+          const rocket = rockets[index];
+          rocket.x += rocket.vx * delta;
+          rocket.y += rocket.vy * delta;
+          rocket.vy += 115 * delta;
+
+          addParticle(rocket.x, rocket.y + 8, {
+            angle: Math.PI / 2 + (Math.random() - 0.5) * 0.55,
+            speed: 45 + Math.random() * 75,
+            gravity: 45,
+            life: 0.35 + Math.random() * 0.35,
+            size: 2 + Math.random() * 3,
+            color: Math.random() > 0.5 ? "#ffd44d" : "#ffffff",
+            shape: "spark"
+          });
+
+          if (rocket.y <= rocket.targetY || rocket.vy >= -70) {
+            burst(rocket.x, rocket.y, width < 600 ? 58 : 82, 1.18);
+            burst(rocket.x, rocket.y, 28, 1.45, "spark");
+            addShockwave(rocket.x, rocket.y, Math.min(width, height) * 0.24, rocket.color);
+            rockets.splice(index, 1);
+          }
+        }
+      }
+
+      function drawRockets() {
+        rockets.forEach(rocket => {
+          context.save();
+          context.strokeStyle = rocket.color;
+          context.lineWidth = 3;
+          context.shadowColor = rocket.color;
+          context.shadowBlur = 12;
+          context.beginPath();
+          context.moveTo(rocket.x, rocket.y + 16);
+          context.lineTo(rocket.x, rocket.y - 6);
+          context.stroke();
+          context.restore();
+        });
+      }
+
+      function updateShockwaves(delta) {
+        for (let index = shockwaves.length - 1; index >= 0; index--) {
+          const wave = shockwaves[index];
+          wave.life -= delta;
+          if (wave.life <= 0) {
+            shockwaves.splice(index, 1);
+            continue;
+          }
+          wave.radius += (wave.maxRadius - wave.radius) * Math.min(1, delta * 7);
+        }
+      }
+
+      function drawShockwaves() {
+        shockwaves.forEach(wave => {
+          context.save();
+          context.globalAlpha = wave.life / wave.maxLife;
+          context.strokeStyle = wave.color;
+          context.lineWidth = 5 * (wave.life / wave.maxLife);
+          context.beginPath();
+          context.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
+          context.stroke();
+          context.restore();
+        });
+      }
+
+      function detonate() {
+        const x = width * 0.5;
+        const y = height * 0.52;
+        detonated = true;
+        flash();
+        burst(x, y, width < 600 ? 160 : 230, 1.65);
+        burst(x, y, 90, 2.05, "spark");
+        addShockwave(x, y, Math.max(width, height) * 0.72);
+        addShockwave(x, y, Math.max(width, height) * 0.48, "rgba(255, 212, 77, 0.9)");
+        triggerHaptic("heavy");
+      }
+
+      function finale() {
+        finaleStarted = true;
+        flash();
+        const points = [
+          [width * 0.14, height * 0.24],
+          [width * 0.5, height * 0.2],
+          [width * 0.86, height * 0.24],
+          [width * 0.28, height * 0.48],
+          [width * 0.72, height * 0.48]
+        ];
+        points.forEach(([x, y], index) => {
+          burst(x, y, width < 600 ? 52 : 76, 1.35);
+          addShockwave(x, y, Math.min(width, height) * 0.22, colors[index % colors.length]);
+        });
+        triggerHaptic("success");
+      }
+
+      function stop() {
+        if (stopped) return;
+        stopped = true;
+        cancelAnimationFrame(animationFrame);
+        canvas.remove();
+        banner.remove();
+        document.querySelectorAll(".celebration-flash").forEach(layer => layer.remove());
+        if (activeCelebration?.stop === stop) activeCelebration = null;
+      }
+
+      function animate(now) {
+        if (stopped) return;
+        const elapsedMs = now - startTime;
+        const elapsed = elapsedMs / 1000;
+        const delta = Math.min(0.034, (now - lastTime) / 1000);
+        lastTime = now;
+
+        if (canvas.width !== Math.round(window.innerWidth * deviceScale) || canvas.height !== Math.round(window.innerHeight * deviceScale)) {
+          sizeCanvas();
+        }
+
+        context.clearRect(0, 0, width, height);
+
+        if (!reducedMotion) {
+          drawFuse(elapsed);
+
+          if (elapsed >= nextTick && elapsed < 4.1) {
+            const tickProgress = Math.min(1, (elapsed - 0.85) / 3.37);
+            const tickX = origin.x + (width * 0.5 - origin.x) * tickProgress;
+            const tickY = origin.y + (height * 0.52 - origin.y) * tickProgress;
+            addShockwave(tickX, tickY, 42, "rgba(255, 212, 77, 0.86)");
+            triggerHaptic("light");
+            nextTick += 0.48;
+          }
+
+          if (elapsed >= 4.2 && !detonated) detonate();
+
+          while (nextRocket < rocketTimes.length && elapsed >= rocketTimes[nextRocket]) {
+            launchRocket(nextRocket % 2 === 0 ? -18 : 18);
+            if (nextRocket === 4 || nextRocket === 8) launchRocket(nextRocket % 2 === 0 ? 30 : -30);
+            nextRocket++;
+          }
+
+          if (elapsed >= 8.82 && !finaleStarted) finale();
+        }
+
+        updateRockets(delta);
+        updateParticles(delta);
+        updateShockwaves(delta);
+        drawShockwaves();
+        drawRockets();
+        drawParticles();
+
+        if (elapsedMs >= duration) {
+          stop();
+          return;
+        }
+        animationFrame = requestAnimationFrame(animate);
+      }
+
+      sizeCanvas();
+      burst(origin.x, origin.y, reducedMotion ? 72 : 110, reducedMotion ? 1.15 : 1.38);
+      addShockwave(origin.x, origin.y, Math.min(width, height) * 0.22);
+      activeCelebration = { person, stop };
+      animationFrame = requestAnimationFrame(animate);
     }
 
     render();
