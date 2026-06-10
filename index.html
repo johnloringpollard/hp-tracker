@@ -3,15 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f6f7fb" />
+  <meta name="theme-color" id="themeColorMeta" content="#f6f7fb" />
   <meta name="apple-mobile-web-app-title" content="Daily Fit" />
   <title>Daily Fit</title>
   <link rel="icon" type="image/png" href="app-icon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="manifest.json" />
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("daily-fit-theme");
+      if (["light", "drab", "blaze", "camo"].includes(savedTheme)) {
+        document.documentElement.dataset.theme = savedTheme;
+      }
+    } catch {}
+  </script>
   <style>
     :root {
+      color-scheme: light;
       --bg: #f6f7fb;
       --card: #ffffff;
       --text: #172033;
@@ -21,8 +30,165 @@
       --done-soft: #e6f7ee;
       --not: #d9dee8;
       --accent: #2f6df6;
+      --accent-mid: #7b4cf6;
+      --danger: #a13f33;
+      --body-background:
+        radial-gradient(circle at top left, rgba(47, 109, 246, 0.12), transparent 34rem),
+        radial-gradient(circle at top right, rgba(31, 157, 85, 0.12), transparent 32rem),
+        var(--bg);
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: rgba(255, 255, 255, 0.82);
+      --surface-border: rgba(255, 255, 255, 0.9);
+      --segment: #edf1f8;
+      --button-shadow: 0 5px 16px rgba(20, 31, 52, 0.06);
+      --tab-shadow: 0 6px 16px rgba(20, 31, 52, 0.10);
+      --card-shadow: 0 8px 20px rgba(20, 31, 52, 0.06);
+      --stat-shadow: 0 10px 25px rgba(20, 31, 52, 0.07);
+      --done-card: linear-gradient(145deg, #ffffff, var(--done-soft));
+      --done-border: rgba(31, 157, 85, 0.38);
+      --done-shadow: 0 16px 36px rgba(31, 157, 85, 0.16);
+      --badge-bg: #eef2f8;
+      --status-dot: #b7bfce;
+      --status-ring: rgba(183, 191, 206, 0.16);
+      --progress-track: #e7ebf4;
+      --countdown-card:
+        radial-gradient(circle at 15% 28%, rgba(121, 87, 255, 0.14), transparent 8rem),
+        radial-gradient(circle at 92% 25%, rgba(31, 157, 85, 0.10), transparent 8rem),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 255, 0.94));
+      --countdown-border: rgba(255, 255, 255, 0.95);
+      --orb-background:
+        radial-gradient(circle at 40% 38%, rgba(255, 255, 255, 0.86), transparent 48%),
+        linear-gradient(145deg, rgba(117, 89, 255, 0.17), rgba(47, 109, 246, 0.08));
+      --orb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 18px 34px rgba(78, 63, 185, 0.12);
+      --orb-sparkle: #d7ccff;
+      --sticky-shadow: 10px 0 20px rgba(255, 255, 255, 0.86);
       --shadow: 0 14px 35px rgba(25, 40, 70, 0.10);
       --radius: 22px;
+    }
+
+    :root[data-theme="drab"] {
+      color-scheme: dark;
+      --bg: #171b14;
+      --card: #252b20;
+      --text: #f2f0df;
+      --muted: #b5b9a2;
+      --line: #454d39;
+      --done: #9abf71;
+      --done-soft: #303b29;
+      --not: #68705d;
+      --accent: #d0aa61;
+      --accent-mid: #9abf71;
+      --danger: #ff9a7d;
+      --body-background:
+        radial-gradient(circle at top left, rgba(154, 191, 113, 0.17), transparent 32rem),
+        radial-gradient(circle at top right, rgba(208, 170, 97, 0.12), transparent 30rem),
+        var(--bg);
+      --surface: rgba(37, 43, 32, 0.88);
+      --surface-strong: rgba(37, 43, 32, 0.94);
+      --surface-border: rgba(181, 185, 162, 0.16);
+      --segment: #30372a;
+      --button-shadow: 0 5px 16px rgba(0, 0, 0, 0.24);
+      --tab-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+      --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+      --stat-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+      --done-card: linear-gradient(145deg, #293124, var(--done-soft));
+      --done-border: rgba(154, 191, 113, 0.48);
+      --done-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+      --badge-bg: #343b2e;
+      --status-dot: #737b68;
+      --status-ring: rgba(181, 185, 162, 0.12);
+      --progress-track: #353c2f;
+      --countdown-card: linear-gradient(145deg, #30372a, #22281e);
+      --countdown-border: rgba(181, 185, 162, 0.18);
+      --orb-background: linear-gradient(145deg, rgba(154, 191, 113, 0.25), rgba(208, 170, 97, 0.12));
+      --orb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 34px rgba(0, 0, 0, 0.24);
+      --orb-sparkle: #9abf71;
+      --sticky-shadow: 10px 0 20px rgba(23, 27, 20, 0.9);
+      --shadow: 0 14px 35px rgba(0, 0, 0, 0.32);
+    }
+
+    :root[data-theme="blaze"] {
+      color-scheme: dark;
+      --bg: #16130f;
+      --card: #27211b;
+      --text: #fff3e2;
+      --muted: #cdbda8;
+      --line: #534639;
+      --done: #ff7a12;
+      --done-soft: #3c2819;
+      --not: #736456;
+      --accent: #ff6a00;
+      --accent-mid: #ff9b4a;
+      --danger: #ffae8f;
+      --body-background:
+        radial-gradient(circle at 12% 0%, rgba(255, 106, 0, 0.26), transparent 30rem),
+        radial-gradient(circle at 95% 10%, rgba(255, 184, 77, 0.14), transparent 28rem),
+        var(--bg);
+      --surface: rgba(39, 33, 27, 0.9);
+      --surface-strong: rgba(39, 33, 27, 0.95);
+      --surface-border: rgba(255, 174, 94, 0.17);
+      --segment: #342b23;
+      --button-shadow: 0 5px 16px rgba(0, 0, 0, 0.28);
+      --tab-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+      --stat-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      --done-card: linear-gradient(145deg, #32261c, var(--done-soft));
+      --done-border: rgba(255, 122, 18, 0.5);
+      --done-shadow: 0 16px 36px rgba(255, 106, 0, 0.12);
+      --badge-bg: #3a3027;
+      --status-dot: #806e5d;
+      --status-ring: rgba(205, 189, 168, 0.12);
+      --progress-track: #3d332a;
+      --countdown-card: linear-gradient(145deg, #39291d, #241d17);
+      --countdown-border: rgba(255, 174, 94, 0.19);
+      --orb-background: linear-gradient(145deg, rgba(255, 106, 0, 0.35), rgba(255, 184, 77, 0.12));
+      --orb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 34px rgba(0, 0, 0, 0.28);
+      --orb-sparkle: #ff9b4a;
+      --sticky-shadow: 10px 0 20px rgba(22, 19, 15, 0.9);
+      --shadow: 0 14px 35px rgba(0, 0, 0, 0.36);
+    }
+
+    :root[data-theme="camo"] {
+      color-scheme: dark;
+      --bg: #13150e;
+      --card: #282a1d;
+      --text: #f0ead7;
+      --muted: #b7b096;
+      --line: #50543a;
+      --done: #a5b56c;
+      --done-soft: #343a23;
+      --not: #70745e;
+      --accent: #d0a45d;
+      --accent-mid: #8e9860;
+      --danger: #f1a081;
+      --body-background:
+        radial-gradient(ellipse at 8% 10%, rgba(96, 105, 62, 0.45), transparent 18rem),
+        radial-gradient(ellipse at 82% 4%, rgba(74, 80, 48, 0.48), transparent 20rem),
+        radial-gradient(ellipse at 28% 72%, rgba(54, 62, 38, 0.5), transparent 22rem),
+        radial-gradient(ellipse at 90% 82%, rgba(92, 75, 43, 0.35), transparent 18rem),
+        var(--bg);
+      --surface: rgba(40, 42, 29, 0.9);
+      --surface-strong: rgba(40, 42, 29, 0.95);
+      --surface-border: rgba(183, 176, 150, 0.17);
+      --segment: #343723;
+      --button-shadow: 0 5px 16px rgba(0, 0, 0, 0.28);
+      --tab-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+      --stat-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      --done-card: linear-gradient(145deg, #303422, var(--done-soft));
+      --done-border: rgba(165, 181, 108, 0.48);
+      --done-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+      --badge-bg: #383b28;
+      --status-dot: #777b63;
+      --status-ring: rgba(183, 176, 150, 0.12);
+      --progress-track: #3a3e29;
+      --countdown-card: linear-gradient(145deg, #353925, #25271a);
+      --countdown-border: rgba(183, 176, 150, 0.19);
+      --orb-background: linear-gradient(145deg, rgba(165, 181, 108, 0.28), rgba(208, 164, 93, 0.13));
+      --orb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 34px rgba(0, 0, 0, 0.28);
+      --orb-sparkle: #a5b56c;
+      --sticky-shadow: 10px 0 20px rgba(19, 21, 14, 0.9);
+      --shadow: 0 14px 35px rgba(0, 0, 0, 0.36);
     }
 
     * { box-sizing: border-box; }
@@ -36,10 +202,8 @@
       min-height: 100vh;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(47, 109, 246, 0.12), transparent 34rem),
-        radial-gradient(circle at top right, rgba(31, 157, 85, 0.12), transparent 32rem),
-        var(--bg);
+      background: var(--body-background);
+      transition: color 180ms ease, background 240ms ease;
     }
 
     .app {
@@ -56,8 +220,8 @@
     }
 
     .hero {
-      background: rgba(255, 255, 255, 0.78);
-      border: 1px solid rgba(255, 255, 255, 0.8);
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
       box-shadow: var(--shadow);
       border-radius: 28px;
       padding: 26px;
@@ -78,6 +242,13 @@
       gap: 16px;
     }
 
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
     .subhead {
       margin: 0;
       color: var(--muted);
@@ -96,7 +267,7 @@
     .segmented {
       display: inline-flex;
       padding: 5px;
-      background: #edf1f8;
+      background: var(--segment);
       border-radius: 999px;
       gap: 4px;
     }
@@ -115,7 +286,7 @@
     .tab[aria-selected="true"] {
       background: var(--card);
       color: var(--text);
-      box-shadow: 0 6px 16px rgba(20, 31, 52, 0.10);
+      box-shadow: var(--tab-shadow);
     }
 
     .date-controls {
@@ -142,12 +313,12 @@
       padding: 10px 12px;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 5px 16px rgba(20, 31, 52, 0.06);
+      box-shadow: var(--button-shadow);
       transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
     }
 
     .clear-btn {
-      color: #a13f33;
+      color: var(--danger);
     }
 
     .icon-btn:hover,
@@ -183,7 +354,7 @@
       color: var(--muted);
       padding: 0;
       cursor: pointer;
-      box-shadow: 0 5px 16px rgba(20, 31, 52, 0.06);
+      box-shadow: var(--button-shadow);
       transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, color 160ms ease, background 160ms ease;
     }
 
@@ -203,7 +374,7 @@
     }
 
     .notify-btn.is-blocked {
-      color: #a13f33;
+      color: var(--danger);
     }
 
     .notify-btn.is-working {
@@ -213,6 +384,14 @@
     .notify-icon {
       width: 22px;
       height: 22px;
+    }
+
+    .theme-btn {
+      color: var(--accent);
+    }
+
+    .theme-btn:active .notify-icon {
+      transform: rotate(18deg);
     }
 
     .notify-btn.is-subscribed::after {
@@ -240,7 +419,7 @@
     }
 
     .date-calendar {
-      color: #111827;
+      color: var(--text);
       flex: 0 0 auto;
       width: 20px;
       height: 20px;
@@ -266,7 +445,7 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       padding: 18px;
-      box-shadow: 0 10px 25px rgba(20, 31, 52, 0.07);
+      box-shadow: var(--stat-shadow);
     }
 
     .stat-label {
@@ -297,11 +476,8 @@
       align-items: center;
       gap: 20px;
       padding: 18px;
-      background:
-        radial-gradient(circle at 15% 28%, rgba(121, 87, 255, 0.14), transparent 8rem),
-        radial-gradient(circle at 92% 25%, rgba(31, 157, 85, 0.10), transparent 8rem),
-        linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 255, 0.94));
-      border-color: rgba(255, 255, 255, 0.95);
+      background: var(--countdown-card);
+      border-color: var(--countdown-border);
     }
 
     .streak-orb {
@@ -311,10 +487,8 @@
       width: 64px;
       height: 64px;
       border-radius: 999px;
-      background:
-        radial-gradient(circle at 40% 38%, rgba(255, 255, 255, 0.86), transparent 48%),
-        linear-gradient(145deg, rgba(117, 89, 255, 0.17), rgba(47, 109, 246, 0.08));
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 18px 34px rgba(78, 63, 185, 0.12);
+      background: var(--orb-background);
+      box-shadow: var(--orb-shadow);
       z-index: 1;
     }
 
@@ -324,7 +498,7 @@
       position: absolute;
       width: 13px;
       height: 13px;
-      background: #d7ccff;
+      background: var(--orb-sparkle);
       clip-path: polygon(50% 0, 62% 36%, 100% 50%, 62% 64%, 50% 100%, 38% 64%, 0 50%, 38% 36%);
     }
 
@@ -395,7 +569,7 @@
       width: 100%;
       border-radius: 999px;
       overflow: hidden;
-      background: #e7ebf4;
+      background: var(--progress-track);
       border: 1px solid var(--line);
     }
 
@@ -426,7 +600,7 @@
     .leaderboard-icon {
       width: 22px;
       height: 22px;
-      color: #4f63f6;
+      color: var(--accent);
     }
 
     .leaderboard-list {
@@ -511,8 +685,8 @@
     }
 
     .panel {
-      background: rgba(255, 255, 255, 0.82);
-      border: 1px solid rgba(255, 255, 255, 0.9);
+      background: var(--surface-strong);
+      border: 1px solid var(--surface-border);
       border-radius: 28px;
       padding: 18px;
       box-shadow: var(--shadow);
@@ -535,7 +709,7 @@
       cursor: pointer;
       overflow: hidden;
       transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
-      box-shadow: 0 8px 20px rgba(20, 31, 52, 0.06);
+      box-shadow: var(--card-shadow);
       text-align: left;
       touch-action: manipulation;
       user-select: none;
@@ -557,9 +731,9 @@
     }
 
     .person-card.done {
-      background: linear-gradient(145deg, #ffffff, var(--done-soft));
-      border-color: rgba(31, 157, 85, 0.38);
-      box-shadow: 0 16px 36px rgba(31, 157, 85, 0.16);
+      background: var(--done-card);
+      border-color: var(--done-border);
+      box-shadow: var(--done-shadow);
     }
 
     .person-name {
@@ -579,7 +753,7 @@
       margin-top: 4px;
       color: var(--muted);
       font-size: 0.72rem;
-      font-weight: 900;
+      font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
@@ -591,7 +765,7 @@
       min-width: 38px;
       padding: 0 10px;
       border-radius: 999px;
-      background: #eef2f8;
+      background: var(--badge-bg);
       color: var(--muted);
       font-weight: 950;
       transition: background 220ms ease, color 220ms ease, transform 220ms ease;
@@ -620,8 +794,8 @@
       width: 10px;
       height: 10px;
       border-radius: 99px;
-      background: #b7bfce;
-      box-shadow: 0 0 0 4px rgba(183, 191, 206, 0.16);
+      background: var(--status-dot);
+      box-shadow: 0 0 0 4px var(--status-ring);
     }
 
     .done .status-dot {
@@ -662,6 +836,7 @@
       border-radius: 12px;
       padding: 10px 12px;
       color: var(--text);
+      background: var(--card);
       font-size: 1rem;
       font-weight: 800;
       text-align: center;
@@ -697,7 +872,7 @@
 
     .time-error {
       min-height: 1.2em;
-      color: #a13f33;
+      color: var(--danger);
       font-size: 0.86rem;
       font-weight: 750;
     }
@@ -756,7 +931,7 @@
       position: sticky;
       left: 0;
       z-index: 1;
-      box-shadow: 10px 0 20px rgba(255,255,255,0.86);
+      box-shadow: var(--sticky-shadow);
     }
 
     td:last-child {
@@ -770,8 +945,8 @@
       width: 38px;
       height: 38px;
       border-radius: 999px;
-      background: #eef2f8;
-      color: #8a93a5;
+      background: var(--badge-bg);
+      color: var(--muted);
       font-weight: 950;
       border: 1px solid transparent;
       transition: transform 160ms ease;
@@ -1003,13 +1178,22 @@
       <section class="hero">
         <div class="hero-title-row">
           <h1>Daily Fit Challenge</h1>
-          <button class="notify-btn" id="notificationBtn" type="button" title="Enable notifications" aria-label="Enable notifications" hidden>
-            <svg class="notify-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M10.27 21a2 2 0 0 0 3.46 0"></path>
-              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"></path>
-            </svg>
-            <span class="sr-only" id="notificationLabel">Enable notifications</span>
-          </button>
+          <div class="hero-actions">
+            <button class="notify-btn theme-btn" id="themeBtn" type="button" title="Change color theme" aria-label="Change color theme">
+              <svg class="notify-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m19 3 2 2-8.5 8.5-3-3L18 2l1 1Z"></path>
+                <path d="m9.5 10.5-5.8 5.8a2.4 2.4 0 0 0-.7 1.7v3h3a2.4 2.4 0 0 0 1.7-.7l5.8-5.8"></path>
+                <path d="M3.2 18h4.6"></path>
+              </svg>
+            </button>
+            <button class="notify-btn" id="notificationBtn" type="button" title="Enable notifications" aria-label="Enable notifications" hidden>
+              <svg class="notify-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.27 21a2 2 0 0 0 3.46 0"></path>
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"></path>
+              </svg>
+              <span class="sr-only" id="notificationLabel">Enable notifications</span>
+            </button>
+          </div>
         </div>
         <!--<p class="subhead">Pick the day, tap your name, and everyone can quickly see who is done.</p>-->
 
@@ -1055,9 +1239,9 @@
           <svg class="streak-flame" viewBox="0 0 64 64" role="img">
             <defs>
               <linearGradient id="countdownGradient" x1="14" y1="8" x2="50" y2="56" gradientUnits="userSpaceOnUse">
-                <stop offset="0" stop-color="#5c63ff"></stop>
-                <stop offset="0.52" stop-color="#7b4cf6"></stop>
-                <stop offset="1" stop-color="#43d6b4"></stop>
+                <stop offset="0" stop-color="var(--accent)"></stop>
+                <stop offset="0.52" stop-color="var(--accent-mid)"></stop>
+                <stop offset="1" stop-color="var(--done)"></stop>
               </linearGradient>
             </defs>
             <path fill="url(#countdownGradient)" d="M17 8h30a3 3 0 0 1 0 6h-1v4.5c0 6.1-3.2 10.7-8.8 13.5 5.6 2.8 8.8 7.4 8.8 13.5V50h1a3 3 0 0 1 0 6H17a3 3 0 0 1 0-6h1v-4.5c0-6.1 3.2-10.7 8.8-13.5-5.6-2.8-8.8-7.4-8.8-13.5V14h-1a3 3 0 0 1 0-6Zm7 6v4.5c0 4.8 2.6 8.1 8 10.3 5.4-2.2 8-5.5 8-10.3V14H24Zm8 21.2c-5.4 2.2-8 5.5-8 10.3V50h16v-4.5c0-4.8-2.6-8.1-8-10.3Z"></path>
@@ -1129,6 +1313,13 @@
 
     const people = ["Alex", "Alban", "Brian", "Cara", "Dave", "Jad", "John", "Kevin", "Lindsay", "Lloyd", "Marshall", "Ron"];
     const storageKey = "daily-check-in-v1";
+    const themeStorageKey = "daily-fit-theme";
+    const themes = [
+      { id: "light", name: "Light", color: "#f6f7fb" },
+      { id: "drab", name: "Drab green", color: "#171b14" },
+      { id: "blaze", name: "Blaze orange", color: "#16130f" },
+      { id: "camo", name: "Camo", color: "#13150e" }
+    ];
     const vapidPublicKey = "BI1EhQtI0yo7ZvCMtAt9QGANGxtYRJ_fHpC0iaGcHgZUGQ3m0OBAd7yHQX7TziCgxIpTZlcocENSxWmi8yWOnns";
 
     const dailyGrid = document.getElementById("dailyGrid");
@@ -1143,6 +1334,8 @@
     const todayBtn = document.getElementById("todayBtn");
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
+    const themeBtn = document.getElementById("themeBtn");
+    const themeColorMeta = document.getElementById("themeColorMeta");
     const notificationBtn = document.getElementById("notificationBtn");
     const notificationLabel = document.getElementById("notificationLabel");
     const clearBtn = document.getElementById("clearBtn");
@@ -1168,6 +1361,7 @@
     let timeError = "";
 
     datePicker.value = selectedDate;
+    setupThemeControls();
     setView(view);
     subscribeToCheckins();
     setupPushControls();
@@ -1241,6 +1435,35 @@
       weeklyView.hidden = isDaily;
       updateUrlState();
       render();
+    }
+
+    function applyTheme(themeId, persist = true) {
+      const theme = themes.find(item => item.id === themeId) || themes[0];
+      const currentIndex = themes.indexOf(theme);
+      const nextTheme = themes[(currentIndex + 1) % themes.length];
+
+      document.documentElement.dataset.theme = theme.id;
+      themeColorMeta.content = theme.color;
+      themeBtn.title = `${theme.name} theme. Switch to ${nextTheme.name}.`;
+      themeBtn.setAttribute("aria-label", `${theme.name} theme. Switch to ${nextTheme.name}.`);
+
+      if (persist) {
+        try {
+          localStorage.setItem(themeStorageKey, theme.id);
+        } catch {}
+      }
+    }
+
+    function setupThemeControls() {
+      const initialTheme = document.documentElement.dataset.theme || "light";
+      applyTheme(initialTheme, false);
+
+      themeBtn.addEventListener("click", () => {
+        const currentIndex = themes.findIndex(theme => theme.id === document.documentElement.dataset.theme);
+        const nextTheme = themes[(currentIndex + 1) % themes.length];
+        applyTheme(nextTheme.id);
+        triggerHaptic("selection");
+      });
     }
 
     function isValidDateKey(value) {
