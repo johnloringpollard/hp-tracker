@@ -12,9 +12,11 @@
   <link rel="manifest" href="manifest.json" />
   <script>
     try {
-      const savedTheme = localStorage.getItem("daily-fit-theme");
-      if (["light", "drab", "blaze", "camo"].includes(savedTheme)) {
+      const storedTheme = localStorage.getItem("daily-fit-theme");
+      const savedTheme = storedTheme === "camo" ? "dark" : storedTheme;
+      if (["light", "drab", "blaze", "dark"].includes(savedTheme)) {
         document.documentElement.dataset.theme = savedTheme;
+        if (storedTheme === "camo") localStorage.setItem("daily-fit-theme", "dark");
       }
     } catch {}
   </script>
@@ -148,46 +150,44 @@
       --shadow: 0 14px 35px rgba(0, 0, 0, 0.36);
     }
 
-    :root[data-theme="camo"] {
+    :root[data-theme="dark"] {
       color-scheme: dark;
-      --bg: #13150e;
-      --card: #282a1d;
-      --text: #f0ead7;
-      --muted: #b7b096;
-      --line: #50543a;
-      --done: #a5b56c;
-      --done-soft: #343a23;
-      --not: #70745e;
-      --accent: #d0a45d;
-      --accent-mid: #8e9860;
-      --danger: #f1a081;
+      --bg: #0d1117;
+      --card: #1b222c;
+      --text: #f4f7fb;
+      --muted: #a9b3c1;
+      --line: #36404d;
+      --done: #58c783;
+      --done-soft: #1d3329;
+      --not: #687384;
+      --accent: #70a7ff;
+      --accent-mid: #8d7dff;
+      --danger: #ff8f8f;
       --body-background:
-        radial-gradient(ellipse at 8% 10%, rgba(96, 105, 62, 0.45), transparent 18rem),
-        radial-gradient(ellipse at 82% 4%, rgba(74, 80, 48, 0.48), transparent 20rem),
-        radial-gradient(ellipse at 28% 72%, rgba(54, 62, 38, 0.5), transparent 22rem),
-        radial-gradient(ellipse at 90% 82%, rgba(92, 75, 43, 0.35), transparent 18rem),
+        radial-gradient(circle at 10% 0%, rgba(72, 118, 190, 0.18), transparent 34rem),
+        radial-gradient(circle at 92% 8%, rgba(113, 92, 203, 0.13), transparent 30rem),
         var(--bg);
-      --surface: rgba(40, 42, 29, 0.9);
-      --surface-strong: rgba(40, 42, 29, 0.95);
-      --surface-border: rgba(183, 176, 150, 0.17);
-      --segment: #343723;
+      --surface: rgba(27, 34, 44, 0.9);
+      --surface-strong: rgba(27, 34, 44, 0.95);
+      --surface-border: rgba(169, 179, 193, 0.16);
+      --segment: #252e3a;
       --button-shadow: 0 5px 16px rgba(0, 0, 0, 0.28);
       --tab-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
       --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
       --stat-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-      --done-card: linear-gradient(145deg, #303422, var(--done-soft));
-      --done-border: rgba(165, 181, 108, 0.48);
+      --done-card: linear-gradient(145deg, #1f2c28, var(--done-soft));
+      --done-border: rgba(88, 199, 131, 0.46);
       --done-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
-      --badge-bg: #383b28;
-      --status-dot: #777b63;
-      --status-ring: rgba(183, 176, 150, 0.12);
-      --progress-track: #3a3e29;
-      --countdown-card: linear-gradient(145deg, #353925, #25271a);
-      --countdown-border: rgba(183, 176, 150, 0.19);
-      --orb-background: linear-gradient(145deg, rgba(165, 181, 108, 0.28), rgba(208, 164, 93, 0.13));
+      --badge-bg: #293341;
+      --status-dot: #748092;
+      --status-ring: rgba(169, 179, 193, 0.12);
+      --progress-track: #2b3542;
+      --countdown-card: linear-gradient(145deg, #202a36, #171d26);
+      --countdown-border: rgba(169, 179, 193, 0.18);
+      --orb-background: linear-gradient(145deg, rgba(112, 167, 255, 0.24), rgba(141, 125, 255, 0.13));
       --orb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 34px rgba(0, 0, 0, 0.28);
-      --orb-sparkle: #a5b56c;
-      --sticky-shadow: 10px 0 20px rgba(19, 21, 14, 0.9);
+      --orb-sparkle: #92baff;
+      --sticky-shadow: 10px 0 20px rgba(13, 17, 23, 0.9);
       --shadow: 0 14px 35px rgba(0, 0, 0, 0.36);
     }
 
@@ -387,11 +387,16 @@
     }
 
     .theme-btn {
-      color: var(--accent);
+      color: var(--text);
+    }
+
+    .theme-icon {
+      width: 19px;
+      height: 19px;
     }
 
     .theme-btn:active .notify-icon {
-      transform: rotate(18deg);
+      transform: scale(0.9);
     }
 
     .notify-btn.is-subscribed::after {
@@ -1180,10 +1185,8 @@
           <h1>Daily Fit Challenge</h1>
           <div class="hero-actions">
             <button class="notify-btn theme-btn" id="themeBtn" type="button" title="Change color theme" aria-label="Change color theme">
-              <svg class="notify-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m19 3 2 2-8.5 8.5-3-3L18 2l1 1Z"></path>
-                <path d="m9.5 10.5-5.8 5.8a2.4 2.4 0 0 0-.7 1.7v3h3a2.4 2.4 0 0 0 1.7-.7l5.8-5.8"></path>
-                <path d="M3.2 18h4.6"></path>
+              <svg class="notify-icon theme-icon" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.75c-.78 1.42-2.01 3.22-3.68 5.42C6.1 11.08 5 13.28 5 14.76a7 7 0 0 0 14 0c0-1.48-1.1-3.68-3.32-6.59C14.01 5.97 12.78 4.17 12 2.75Z"></path>
               </svg>
             </button>
             <button class="notify-btn" id="notificationBtn" type="button" title="Enable notifications" aria-label="Enable notifications" hidden>
@@ -1318,7 +1321,7 @@
       { id: "light", name: "Light", color: "#f6f7fb" },
       { id: "drab", name: "Drab green", color: "#171b14" },
       { id: "blaze", name: "Blaze orange", color: "#16130f" },
-      { id: "camo", name: "Camo", color: "#13150e" }
+      { id: "dark", name: "Dark", color: "#0d1117" }
     ];
     const vapidPublicKey = "BI1EhQtI0yo7ZvCMtAt9QGANGxtYRJ_fHpC0iaGcHgZUGQ3m0OBAd7yHQX7TziCgxIpTZlcocENSxWmi8yWOnns";
 
