@@ -564,12 +564,24 @@
 
     .person-name {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
+    }
+
+    .person-name-text {
       font-size: 1.35rem;
       font-weight: 950;
       letter-spacing: -0.035em;
+    }
+
+    .person-best {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     .badge {
@@ -1761,7 +1773,7 @@
       progressBar.style.width = `${percent}%`;
     }
 
-    function getFastestLeaderboard() {
+    function getPersonalBests() {
       const today = todayKey();
       const bestByPerson = new Map();
 
@@ -1781,7 +1793,11 @@
         });
       });
 
-      return [...bestByPerson.values()]
+      return bestByPerson;
+    }
+
+    function getFastestLeaderboard() {
+      return [...getPersonalBests().values()]
         .sort((a, b) => a.seconds - b.seconds || a.person.localeCompare(b.person))
         .slice(0, 3);
     }
@@ -1812,12 +1828,14 @@
 
     function renderDaily() {
       dailyGrid.innerHTML = "";
+      const personalBests = getPersonalBests();
 
       people.forEach(person => {
         const done = isDone(selectedDate, person);
         const editing = isEditing(person);
         const canChangeDone = canChangeDoneState();
         const duration = formatDuration(getDurationSeconds(selectedDate, person));
+        const personalBest = personalBests.get(person);
         const draftParts = durationDraftParts(timeDraft);
         const statusText = done
           ? duration ? `Done in ${duration}` : canChangeDone ? "Done today" : "Done"
@@ -1837,7 +1855,10 @@
 
         card.innerHTML = `
           <div class="person-name">
-            <span>${escapeHtml(person)}</span>
+            <div>
+              <div class="person-name-text">${escapeHtml(person)}</div>
+              ${personalBest ? `<div class="person-best">Best ${escapeHtml(formatDuration(personalBest.seconds))}</div>` : ""}
+            </div>
             <span class="badge">${done ? "✓" : "—"}</span>
           </div>
           <div class="status">
